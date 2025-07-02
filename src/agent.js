@@ -257,16 +257,29 @@ class DeploymentAgent {
         this.app.get('/api/logs/:name?', async (req, res) => {
             try {
                 const { name } = req.params;
+                const download = req.query.download === '1';
                 const logFile = name ? 
                     path.join(this.logsPath, `${name}.log`) : 
                     path.join(this.logsPath, 'combined.log');
-                
+                if (download) {
+                    return res.download(logFile);
+                }
                 const logs = await fs.readFile(logFile, 'utf8');
                 const lines = logs.split('\n').slice(-100); // Last 100 lines
-                
                 res.json({ logs: lines });
             } catch (error) {
                 res.json({ logs: ['No logs available'] });
+            }
+        });
+
+        // Serve raw README.md for help tab
+        this.app.get('/readme.md', async (req, res) => {
+            try {
+                const readmePath = path.join(__dirname, '..', 'readme.md');
+                const content = await fs.readFile(readmePath, 'utf8');
+                res.type('text/markdown').send(content);
+            } catch (e) {
+                res.status(404).send('# Documentation not found');
             }
         });
 
