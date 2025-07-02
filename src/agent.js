@@ -17,13 +17,13 @@ const execAsync = promisify(exec);
 class DeploymentAgent {
     constructor() {
         this.app = express();
-        this.port = process.env.PORT || 3000;
+        this.port = process.env.PORT || 3004;
         this.configPath = path.join(__dirname, 'config');
         this.projectsPath = path.join(this.configPath, 'projects.json');
         this.settingsPath = path.join(this.configPath, 'settings.json');
         this.logsPath = path.join(__dirname, 'logs');
         this.publicPath = path.join(__dirname, '..', 'public');
-        this.authPassword = process.env.AGENT_PASSWORD || this.settings.AGENT_PASSWORD || 'changeme';
+        this.authPassword = process.env.AGENT_PASSWORD || 'changeme';
         
         this.projects = {};
         this.settings = {};
@@ -63,6 +63,10 @@ class DeploymentAgent {
 
     async initializeApp() {
         await this.loadConfiguration();
+        // Update password if set in settings
+        if (this.settings.AGENT_PASSWORD) {
+            this.authPassword = this.settings.AGENT_PASSWORD;
+        }
         this.setupMiddleware();
         this.setupRoutes();
         this.startPolling();
