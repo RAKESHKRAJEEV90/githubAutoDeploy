@@ -1,0 +1,49 @@
+# Node
+node_modules/
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+build/
+dist/
+
+# Docker
+*.local
+Dockerfile*
+docker-compose*
+
+# Project data
+config/settings.json
+config/projects.json
+projects/
+
+# SSH keys (never commit private keys)
+*.pem
+*.pub
+*.key
+.ssh/
+
+# Misc
+.idea/
+.vscode/
+*.swp
+*.swo
+*.bak
+
+# Systemd
+systemd/*.service
+
+# Parent folder (if present)
+/python github auto deploy/
+

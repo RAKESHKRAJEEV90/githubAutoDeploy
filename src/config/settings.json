@@ -1,0 +1,6 @@
+{
+  "pollingInterval": 5,
+  "webhookSecret": "9ae83dc368ad712b348d55faf849cc03aa9d9c8df7138bbf690f559d60b3874d",
+  "maxConcurrentDeployments": 3,
+  "logRetentionDays": 30
+}

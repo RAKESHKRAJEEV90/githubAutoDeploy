@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Git Auto-Deployment Agent</title>
+    <style>
+        :root {
+            --primary: #3498db;
+            --primary-dark: #217dbb;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --bg: #f5f7fa;
+            --card-bg: #fff;
+            --shadow: 0 2px 8px rgba(0,0,0,0.07);
+            --radius: 10px;
+            --transition: 0.2s cubic-bezier(.4,0,.2,1);
+        }
+        html, body { height: 100%; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: var(--bg);
+            color: #222;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 16px 64px 16px;
+        }
+        .header {
+            background: var(--card-bg);
+            padding: 32px 24px 24px 24px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        .header h1 {
+            color: var(--primary);
+            margin: 0 0 8px 0;
+            font-size: 2.2rem;
+            letter-spacing: -1px;
+        }
+        .header p {
+            color: #555;
+            margin: 0;
+        }
+        .tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 24px;
+        }
+        .tab {
+            background: var(--card-bg);
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 12px 32px;
+            cursor: pointer;
+            font-weight: 500;
+            color: #555;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            transition: background var(--transition), color var(--transition);
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            background: #eaf6fd;
+        }
+        .tab:hover:not(.active) {
+            background: #f0f4f8;
+            color: var(--primary-dark);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(16px);} to { opacity: 1; transform: none; } }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .status-card {
+            background: var(--card-bg);
+            padding: 24px 18px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transition: box-shadow var(--transition), transform var(--transition);
+        }
+        .status-card:hover {
+            box-shadow: 0 4px 16px rgba(52,152,219,0.10);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .status-card h3 {
+            color: #34495e;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .status-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+        .projects-section, .auth-section, .migration-section {
+            background: var(--card-bg);
+            padding: 24px 18px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(52,152,219,0.08);
+            transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+            outline: none;
+        }
+        .btn:active {
+            transform: scale(0.97);
+        }
+        .btn:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(52,152,219,0.13);
+        }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #229954; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #c0392b; }
+        .project-card {
+            border: 1px solid #e3e3e3;
+            border-radius: 6px;
+            padding: 18px 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: box-shadow var(--transition), border var(--transition);
+        }
+        .project-card:hover {
+            border: 1px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(52,152,219,0.08);
+        }
+        .project-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .status-ready { background: #d4edda; color: #155724; }
+        .status-deploying { background: #fff3cd; color: #856404; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .logs-section {
+            background: #23272e;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: var(--radius);
+            font-family: 'Fira Mono', 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;
+            transition: border var(--transition), box-shadow var(--transition);
+        }
+        .form-group input:focus, .form-group select:focus {
+            border: 1.5px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(52,152,219,0.08);
+        }
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; transition: background 0.3s;
+        }
+        .modal.active { display: flex; animation: fadeIn 0.3s; }
+        .modal-content {
+            background-color: white; margin: auto; padding: 32px 24px; border-radius: var(--radius); width: 90%; max-width: 420px; box-shadow: var(--shadow); position: relative; animation: fadeIn 0.3s;
+        }
+        .modal-content h3 { margin-top: 0; }
+        .modal-close {
+            position: absolute; top: 12px; right: 18px; font-size: 1.5rem; color: #aaa; cursor: pointer; transition: color 0.2s;
+        }
+        .modal-close:hover { color: var(--danger); }
+        .tab-section { margin-bottom: 32px; }
+        .tab-section:last-child { margin-bottom: 0; }
+        .fade-in { animation: fadeIn 0.4s; }
+        .micro-effect { transition: box-shadow 0.2s, transform 0.2s; }
+        .micro-effect:active { box-shadow: 0 1px 2px rgba(52,152,219,0.10); transform: scale(0.98); }
+        .copy-btn { margin-left: 8px; font-size: 0.95em; padding: 4px 10px; }
+        .ssh-key-box { background: #f4f8fb; border: 1px solid #dbeaf7; border-radius: 6px; padding: 12px; font-family: 'Fira Mono', monospace; font-size: 0.98em; margin: 10px 0; word-break: break-all; }
+        .test-ssh-result { margin-top: 10px; font-size: 0.98em; }
+        .success { color: var(--success); }
+        .error { color: var(--danger); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header micro-effect">
+            <img src="https://img.icons8.com/color/48/000000/git.png" alt="Git" style="width:48px;height:48px;">
+            <div>
+                <h1>Universal Git Auto-Deployment Agent</h1>
+                <p>Modern, universal deployment for Raspberry Pi & Linux servers</p>
+            </div>
+        </div>
+        <div class="tabs">
+            <div class="tab active" data-tab="dashboard">Dashboard</div>
+            <div class="tab" data-tab="auth">Authentication</div>
+            <div class="tab" data-tab="migration">Migration</div>
+        </div>
+        <div class="tab-content active" id="dashboard">
+            <div class="status-grid">
+                <div class="status-card micro-effect">
+                    <h3>System Status</h3>
+                    <div class="status-value" id="systemStatus">Loading...</div>
+                </div>
+                <div class="status-card micro-effect">
+                    <h3>Active Projects</h3>
+                    <div class="status-value" id="projectCount">0</div>
+                </div>
+                <div class="status-card micro-effect">
+                    <h3>Queue Length</h3>
+                    <div class="status-value" id="queueLength">0</div>
+                </div>
+                <div class="status-card micro-effect">
+                    <h3>Uptime</h3>
+                    <div class="status-value" id="uptime">0s</div>
+                </div>
+            </div>
+            <div class="projects-section tab-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Projects</h2>
+                    <button class="btn" onclick="showAddProjectModal()">Add Project</button>
+                </div>
+                <div id="projectsList"></div>
+            </div>
+            <div class="projects-section tab-section">
+                <h2>System Logs</h2>
+                <div class="logs-section" id="systemLogs">Loading logs...</div>
+            </div>
+        </div>
+        <div class="tab-content" id="auth">
+            <div class="auth-section tab-section">
+                <h2>SSH Key Management</h2>
+                <div style="margin-bottom: 18px;">
+                    <button class="btn" onclick="generateSshKey()">Generate SSH Key</button>
+                    <button class="btn" onclick="showPublicKey()">Show Public Key</button>
+                    <button class="btn" onclick="testSsh()">Test SSH Connection</button>
+                </div>
+                <div id="sshKeyBox" class="ssh-key-box" style="display:none;"></div>
+                <button id="copyKeyBtn" class="btn copy-btn" style="display:none;">Copy Public Key</button>
+                <div id="testSshResult" class="test-ssh-result"></div>
+            </div>
+        </div>
+        <div class="tab-content" id="migration">
+            <div class="migration-section tab-section">
+                <h2>Project Migration</h2>
+                <form id="migrateForm">
+                    <div class="form-group">
+                        <label for="migrateName">Project Name:</label>
+                        <input type="text" id="migrateName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="migrateRepo">Repository URL:</label>
+                        <input type="url" id="migrateRepo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="migrateBranch">Branch:</label>
+                        <input type="text" id="migrateBranch" value="main">
+                    </div>
+                    <div class="form-group">
+                        <label for="migratePath">Deploy Path:</label>
+                        <input type="text" id="migratePath" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Migrate Project</button>
+                </form>
+                <div id="migrateResult" style="margin-top:12px;"></div>
+            </div>
+        </div>
+        <div id="addProjectModal" class="modal">
+            <div class="modal-content fade-in">
+                <span class="modal-close" onclick="hideAddProjectModal()">&times;</span>
+                <h3>Add New Project</h3>
+                <form id="addProjectForm">
+                    <div class="form-group">
+                        <label for="projectName">Project Name:</label>
+                        <input type="text" id="projectName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="repoUrl">Repository URL:</label>
+                        <input type="url" id="repoUrl" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="branch">Branch:</label>
+                        <input type="text" id="branch" value="main">
+                    </div>
+                    <div class="form-group">
+                        <label for="deployPath">Deploy Path:</label>
+                        <input type="text" id="deployPath" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="serviceType">Service Type:</label>
+                        <select id="serviceType">
+                            <option value="systemd">Systemd</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button type="button" class="btn" onclick="hideAddProjectModal()">Cancel</button>
+                        <button type="submit" class="btn btn-success">Add Project</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div id="passwordModal" class="modal active">
+            <div class="modal-content fade-in">
+                <h3>Enter Agent Password</h3>
+                <input type="password" id="passwordInput" class="form-group" placeholder="Password" style="width:100%;margin-bottom:16px;">
+                <button class="btn btn-success" onclick="submitPassword()">Submit</button>
+                <div id="passwordError" class="error" style="margin-top:10px;display:none;"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // --- Password Modal Logic ---
+        let agentPassword = sessionStorage.getItem('agentPassword') || '';
+        function showPasswordModal() {
+            document.getElementById('passwordModal').classList.add('active');
+        }
+        function hidePasswordModal() {
+            document.getElementById('passwordModal').classList.remove('active');
+        }
+        function submitPassword() {
+            const pwd = document.getElementById('passwordInput').value;
+            agentPassword = pwd;
+            // Try a protected API call to check password
+            fetch('/api/status', { headers: { 'x-agent-password': agentPassword } })
+                .then(r => r.ok ? r.json() : Promise.reject('Invalid password'))
+                .then(() => {
+                    sessionStorage.setItem('agentPassword', agentPassword);
+                    hidePasswordModal();
+                    loadAll();
+                })
+                .catch(() => {
+                    document.getElementById('passwordError').style.display = 'block';
+                    document.getElementById('passwordError').textContent = 'Invalid password. Please try again.';
+                });
+        }
+        if (!agentPassword) showPasswordModal();
+        // Enter key submits password
+        document.getElementById('passwordInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') submitPassword();
+        });
+        // --- Tab Logic ---
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.onclick = function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            };
+        });
+        // --- Dashboard Logic ---
+        function loadAll() {
+            loadStatus();
+            loadProjects();
+            loadLogs();
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            if (agentPassword) loadAll();
+            setInterval(() => { if (agentPassword) { loadStatus(); loadProjects(); } }, 10000);
+            setInterval(() => { if (agentPassword) loadLogs(); }, 30000);
+        });
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/status', { headers: { 'x-agent-password': agentPassword } });
+                systemStatus = await response.json();
+                document.getElementById('systemStatus').textContent = systemStatus.status;
+                document.getElementById('projectCount').textContent = systemStatus.projects;
+                document.getElementById('queueLength').textContent = systemStatus.queueLength;
+                document.getElementById('uptime').textContent = formatUptime(systemStatus.uptime);
+            } catch (error) { document.getElementById('systemStatus').textContent = 'Error'; }
+        }
+        async function loadProjects() {
+            try {
+                const response = await fetch('/api/projects', { headers: { 'x-agent-password': agentPassword } });
+                projects = await response.json();
+                renderProjects();
+            } catch (error) { document.getElementById('projectsList').innerHTML = '<p>Error loading projects.</p>'; }
+        }
+        function renderProjects() {
+            const projectsList = document.getElementById('projectsList');
+            if (Object.keys(projects).length === 0) {
+                projectsList.innerHTML = '<p>No projects configured. Click "Add Project" to get started.</p>';
+                return;
+            }
+            projectsList.innerHTML = Object.entries(projects).map(([name, project]) => `
+                <div class="project-card micro-effect">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h4>${project.name}</h4>
+                            <p><strong>Repository:</strong> ${project.repoUrl}</p>
+                            <p><strong>Branch:</strong> ${project.branch}</p>
+                            <p><strong>Deploy Path:</strong> ${project.deployPath}</p>
+                            <p><strong>Last Deployment:</strong> ${project.lastDeployment || 'Never'}</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="project-status status-${project.status}">${project.status}</div>
+                            <div style="margin-top: 10px;">
+                                <button class="btn btn-success" onclick="deployProject('${name}')">Deploy</button>
+                                <button class="btn btn-danger" onclick="removeProject('${name}')">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        async function loadLogs() {
+            try {
+                const response = await fetch('/api/logs', { headers: { 'x-agent-password': agentPassword } });
+                const data = await response.json();
+                document.getElementById('systemLogs').textContent = data.logs.join('\n');
+            } catch (error) { document.getElementById('systemLogs').textContent = 'Error loading logs.'; }
+        }
+        async function deployProject(name) {
+            try {
+                const response = await fetch(`/api/deploy/${name}`, { method: 'POST', headers: { 'x-agent-password': agentPassword } });
+                const result = await response.json();
+                if (result.success) {
+                    alert('Deployment queued successfully!');
+                    loadProjects();
+                } else {
+                    alert('Deployment failed: ' + result.error);
+                }
+            } catch (error) { alert('Failed to deploy project: ' + error.message); }
+        }
+        async function removeProject(name) {
+            if (!confirm(`Are you sure you want to remove project "${name}"?`)) return;
+            try {
+                const response = await fetch(`/api/projects/${name}`, { method: 'DELETE', headers: { 'x-agent-password': agentPassword } });
+                const result = await response.json();
+                if (result.success) {
+                    alert('Project removed successfully!');
+                    loadProjects();
+                } else {
+                    alert('Failed to remove project: ' + result.error);
+                }
+            } catch (error) { alert('Failed to remove project: ' + error.message); }
+        }
+        function showAddProjectModal() {
+            document.getElementById('addProjectModal').classList.add('active');
+        }
+        function hideAddProjectModal() {
+            document.getElementById('addProjectModal').classList.remove('active');
+            document.getElementById('addProjectForm').reset();
+        }
+        document.getElementById('addProjectForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = {
+                name: document.getElementById('projectName').value,
+                repoUrl: document.getElementById('repoUrl').value,
+                branch: document.getElementById('branch').value,
+                deployPath: document.getElementById('deployPath').value,
+                serviceType: document.getElementById('serviceType').value
+            };
+            try {
+                const response = await fetch('/api/projects', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-agent-password': agentPassword },
+                    body: JSON.stringify(formData)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('Project added successfully!');
+                    hideAddProjectModal();
+                    loadProjects();
+                } else {
+                    alert('Failed to add project: ' + result.error);
+                }
+            } catch (error) { alert('Failed to add project: ' + error.message); }
+        });
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            if (days > 0) return `${days}d ${hours}h`;
+            else if (hours > 0) return `${hours}h ${minutes}m`;
+            else return `${minutes}m`;
+        }
+        window.onclick = function(event) {
+            const modal = document.getElementById('addProjectModal');
+            if (event.target === modal) hideAddProjectModal();
+        }
+        // --- SSH Key Management ---
+        async function generateSshKey() {
+            setSshKeyBox('Generating SSH key...');
+            try {
+                const res = await fetch('/api/auth/generate-key', { method: 'POST', headers: { 'x-agent-password': agentPassword } });
+                const data = await res.json();
+                if (data.success) {
+                    setSshKeyBox('SSH key generated! Click "Show Public Key" to view.');
+                } else {
+                    setSshKeyBox('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) { setSshKeyBox('Error: ' + e.message); }
+        }
+        async function showPublicKey() {
+            setSshKeyBox('Loading public key...');
+            try {
+                const res = await fetch('/api/auth/public-key', { headers: { 'x-agent-password': agentPassword } });
+                const data = await res.json();
+                if (data.publicKey) {
+                    setSshKeyBox(data.publicKey);
+                    document.getElementById('copyKeyBtn').style.display = 'inline-block';
+                } else {
+                    setSshKeyBox('No public key found.');
+                    document.getElementById('copyKeyBtn').style.display = 'none';
+                }
+            } catch (e) { setSshKeyBox('Error: ' + e.message); document.getElementById('copyKeyBtn').style.display = 'none'; }
+        }
+        function setSshKeyBox(text) {
+            const box = document.getElementById('sshKeyBox');
+            box.style.display = 'block';
+            box.textContent = text;
+        }
+        document.getElementById('copyKeyBtn').onclick = function() {
+            const key = document.getElementById('sshKeyBox').textContent;
+            navigator.clipboard.writeText(key).then(() => {
+                document.getElementById('copyKeyBtn').textContent = 'Copied!';
+                setTimeout(() => { document.getElementById('copyKeyBtn').textContent = 'Copy Public Key'; }, 1200);
+            });
+        };
+        async function testSsh() {
+            document.getElementById('testSshResult').textContent = 'Testing SSH connection...';
+            try {
+                const res = await fetch('/api/auth/test-ssh', { method: 'POST', headers: { 'x-agent-password': agentPassword } });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('testSshResult').innerHTML = '<span class="success">' + (data.output || 'Success!') + '</span>';
+                } else {
+                    document.getElementById('testSshResult').innerHTML = '<span class="error">' + (data.output || 'Failed') + '</span>';
+                }
+            } catch (e) {
+                document.getElementById('testSshResult').innerHTML = '<span class="error">Error: ' + e.message + '</span>';
+            }
+        }
+        // --- Migration ---
+        document.getElementById('migrateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = {
+                name: document.getElementById('migrateName').value,
+                repo: document.getElementById('migrateRepo').value,
+                branch: document.getElementById('migrateBranch').value,
+                deployPath: document.getElementById('migratePath').value
+            };
+            document.getElementById('migrateResult').textContent = 'Migrating...';
+            try {
+                const res = await fetch('/api/migrate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-agent-password': agentPassword },
+                    body: JSON.stringify(formData)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('migrateResult').innerHTML = '<span class="success">Project migrated successfully!</span>';
+                    loadProjects();
+                } else {
+                    document.getElementById('migrateResult').innerHTML = '<span class="error">' + (data.error || 'Migration failed') + '</span>';
+                }
+            } catch (e) {
+                document.getElementById('migrateResult').innerHTML = '<span class="error">Error: ' + e.message + '</span>';
+            }
+        });
+    </script>
+</body>
+</html> 
