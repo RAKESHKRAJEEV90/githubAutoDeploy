@@ -20,8 +20,8 @@ dist/
 
 # Docker
 *.local
-Dockerfile*
-docker-compose*
+#Dockerfile*
+#docker-compose*
 
 # Project data
 config/settings.json

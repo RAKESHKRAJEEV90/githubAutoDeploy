@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  git-auto-deployer:
+    build: .
+    container_name: git-auto-deployer
+    restart: unless-stopped
+    ports:
+      - "3004:3004"
+    environment:
+      - NODE_ENV=production
+      - AGENT_PASSWORD=changeme # Change this in production!
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./projects:/app/projects
+      - ./templates:/app/templates
+      - ./public:/app/public
+      - ~/.ssh:/root/.ssh # Persist SSH keys (host user's .ssh)
+    # Uncomment if you want to run as a specific user (e.g., 1000 for 'pi')
+    # user: "1000:1000" 
