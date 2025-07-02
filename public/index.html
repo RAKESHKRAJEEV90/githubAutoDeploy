@@ -393,9 +393,7 @@
         </div>
 
         <div class="tabs">
-            <div class="tab active" data-tab="dashboard">
-                <span class="status-indicator online"></span>Dashboard
-            </div>
+            <div class="tab active" data-tab="dashboard">Dashboard</div>
             <div class="tab" data-tab="auth">Authentication</div>
             <div class="tab" data-tab="migration">Migration</div>
             <div class="tab" data-tab="logs">Logs</div>
@@ -577,19 +575,14 @@
         }
 
         function switchTab(tab) {
-            // Update tab classes
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
-            
-            // Show selected tab
             const tabElement = document.querySelector(`.tab[data-tab="${tab}"]`);
             const contentElement = document.getElementById(tab);
-            
             if (tabElement && contentElement) {
                 tabElement.classList.add('active');
                 contentElement.style.display = 'block';
-                
-                // Trigger tab-specific actions
+                updateTabIndicator();
                 if (tab === 'logs') loadProjectListForLogs();
                 if (tab === 'help') loadReadme();
             }
@@ -599,17 +592,35 @@
         async function generateSshKey() {
             const statusSpan = document.getElementById('generateKeyStatus');
             const originalText = statusSpan.textContent;
-            
+            setSshKeyBox('Checking for existing SSH key...', true);
+            let timeoutId;
+            try {
+                // First, check if a public key already exists
+                const checkRes = await fetch('/api/auth/public-key', { headers: { 'x-agent-password': agentPassword } });
+                const checkData = await checkRes.json();
+                if (checkData.publicKey) {
+                    setSshKeyBox('SSH key already exists. Click "Show Public Key" to view.');
+                    statusSpan.textContent = originalText;
+                    return;
+                }
+            } catch (e) { /* No key found, proceed to generate */ }
             statusSpan.textContent = 'Generating...';
             setSshKeyBox('Generating SSH key...', true);
-            
+            // Timeout for long-running ssh-keygen
+            let timedOut = false;
+            timeoutId = setTimeout(() => {
+                timedOut = true;
+                setSshKeyBox('SSH key generation is taking too long. Please check server logs or try again.', false);
+                statusSpan.textContent = originalText;
+            }, 20000); // 20 seconds
             try {
-                const res = await fetch('/api/auth/generate-key', { 
-                    method: 'POST', 
-                    headers: { 'x-agent-password': agentPassword } 
+                const res = await fetch('/api/auth/generate-key', {
+                    method: 'POST',
+                    headers: { 'x-agent-password': agentPassword }
                 });
+                if (timedOut) return;
+                clearTimeout(timeoutId);
                 const data = await res.json();
-                
                 if (data.success) {
                     setSshKeyBox('SSH key generated successfully! Click "Show Public Key" to view.');
                     setSshLogOutput(data.message || 'SSH key generated successfully.');
@@ -618,10 +629,14 @@
                     setSshLogOutput(data.error || 'Unknown error');
                 }
             } catch (e) {
-                setSshKeyBox('Error: ' + e.message);
-                setSshLogOutput(e.message);
+                if (!timedOut) {
+                    setSshKeyBox('Error: ' + e.message);
+                    setSshLogOutput(e.message);
+                    statusSpan.textContent = originalText;
+                }
             } finally {
-                statusSpan.textContent = originalText;
+                if (!timedOut) statusSpan.textContent = originalText;
+                clearTimeout(timeoutId);
             }
         }
 
@@ -880,6 +895,19 @@
         document.getElementById('passwordInput').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') submitPassword();
         });
+
+        // --- Tab Indicator Logic ---
+        function updateTabIndicator() {
+            document.querySelectorAll('.tab .status-indicator').forEach(e => e.remove());
+            const activeTab = document.querySelector('.tab.active');
+            if (activeTab) {
+                const dot = document.createElement('span');
+                dot.className = 'status-indicator online';
+                activeTab.insertBefore(dot, activeTab.firstChild);
+            }
+        }
+        // On load, set indicator
+        document.addEventListener('DOMContentLoaded', updateTabIndicator);
     </script>
 </body>
 </html>
