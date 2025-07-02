@@ -8,7 +8,7 @@ A universal, production-ready auto-deployment solution for Raspberry Pi and Linu
 - **Universal**: Works with any project structure (Node.js, Python, Go, static, etc.)
 - **Multi-project**: Manage multiple apps with custom deploy scripts
 - **Triggers**: Webhook (real-time), polling (backup), manual
-- **Service management**: systemd integration
+- **Service management**: systemd integration (native only)
 - **Web interface**: Monitor, trigger, and view logs
 - **Secure**: Webhook signature verification, SSH keys, password-protected API
 - **Easy migration**: Add existing projects with a script or via the web UI
@@ -19,19 +19,21 @@ A universal, production-ready auto-deployment solution for Raspberry Pi and Linu
 
 ### 1. Clone and Enter Directory
 ```sh
-cd 'githubAutoDeploy'
+cd 'node js'
 ```
 
-### 2. Install Node.js Dependencies
+### 2. Install Node.js Dependencies (Native Only)
 ```sh
 npm install
 ```
 
-### 3. (Linux/Pi) Run the Install Script (for full system setup)
+### 3. (Linux/Pi Native) Run the Install Script
 ```sh
 sudo chmod +x scripts/*.sh
 sudo ./scripts/install.sh
 ```
+- This script is **only for native (bare metal) installs**. It sets up systemd, nginx, users, and all system-level dependencies.
+- **Do NOT run this script inside Docker.**
 
 ### 4. Set Up Git Authentication
 #### Option 1: Web Interface (Recommended on Linux/Pi)
@@ -50,7 +52,7 @@ sudo ./scripts/install.sh
 > **Note:** SSH key management features require the agent to run on Linux/Pi with permissions to access `~/.ssh` and run `ssh-keygen`/`ssh`.
 > On Windows, use WSL or set up SSH keys manually.
 
-### 5. Start the Agent (for development/testing)
+### 5. Start the Agent (for development/testing, native only)
 ```sh
 npm start
 # or
@@ -59,7 +61,11 @@ node src/agent.js
 
 ---
 
-## 🐳 Docker Usage
+## 🐳 Docker Usage (Recommended for Most Users)
+
+- **You do NOT need to run `install.sh` in Docker.**
+- All features (web UI, deployments, webhooks, SSH, password protection, migration, etc.) work fully in Docker.
+- Systemd/nginx setup is not needed in Docker; the container runs the agent as a service.
 
 ### 1. Build and Start the Container
 ```sh
@@ -89,6 +95,24 @@ docker-compose down
 > **Note:**
 > - The agent will run on port **3004** (as set in your Dockerfile and compose file).
 > - Make sure port 3004 is open on your firewall if accessing remotely.
+
+---
+
+## ⚡ Native vs Docker: Which Should I Use?
+
+| Feature                | Native (install.sh) | Docker (Recommended) |
+|------------------------|:-------------------:|:-------------------:|
+| Web UI                 |         ✔           |         ✔           |
+| Deployments            |         ✔           |         ✔           |
+| Webhooks               |         ✔           |         ✔           |
+| SSH Key Management     |         ✔           |         ✔           |
+| Systemd Service        |         ✔           |   (Docker managed)  |
+| Nginx Reverse Proxy    |         ✔           |   (Add container)   |
+| Password Protection    |         ✔           |         ✔           |
+| Logs, Migration, etc.  |         ✔           |         ✔           |
+
+- **Use Docker** for easiest setup, isolation, and portability.
+- **Use native install** only if you need systemd/nginx on the host.
 
 ---
 
