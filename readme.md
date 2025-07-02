@@ -19,7 +19,7 @@ A universal, production-ready auto-deployment solution for Raspberry Pi and Linu
 
 ### 1. Clone and Enter Directory
 ```sh
-cd 'node js'
+cd 'githubAutoDeploy'
 ```
 
 ### 2. Install Node.js Dependencies
