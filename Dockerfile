@@ -8,9 +8,9 @@ RUN apk add --no-cache \
     sudo \
     bash
 
-# Create non-root user
-RUN addgroup -g 1000 appuser && \
-    adduser -D -s /bin/bash -u 1000 -G appuser appuser
+# Create non-root user with available IDs
+RUN addgroup appuser && \
+    adduser -D -s /bin/bash -G appuser appuser
 
 # Set workdir and change ownership
 WORKDIR /app
