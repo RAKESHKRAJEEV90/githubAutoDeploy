@@ -677,13 +677,12 @@
                     headers: { 'x-agent-password': agentPassword } 
                 });
                 const data = await res.json();
-                
                 setSshLogOutput(data.output || 'SSH test completed.');
-                
-                if (data.success) {
-                    resultDiv.innerHTML = '<span class="success">✓ SSH connection successful!</span>';
+                const output = (data.output || '').toLowerCase();
+                if (output.includes('successfully authenticated')) {
+                    resultDiv.innerHTML = '<span class="success">✓ SSH connection successful!<br>' + data.output + '</span>';
                 } else {
-                    resultDiv.innerHTML = '<span class="error">✗ SSH connection failed</span>';
+                    resultDiv.innerHTML = '<span class="error">✗ SSH connection failed<br>' + data.output + '</span>';
                     troubleshootDiv.style.display = 'block';
                 }
             } catch (e) {
