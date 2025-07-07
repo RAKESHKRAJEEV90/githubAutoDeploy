@@ -642,15 +642,13 @@
 
         async function showPublicKey() {
             setSshKeyBox('Loading public key...', true);
-            
             try {
                 const res = await fetch('/api/auth/public-key', { 
                     headers: { 'x-agent-password': agentPassword } 
                 });
                 const data = await res.json();
-                
-                if (data.success && data.publicKey) {
-                    setSshKeyBox(data.publicKey);
+                if (data.publicKey) {
+                    setSshKeyBox(`<pre style='white-space:pre-wrap;'>${data.publicKey.trim()}</pre>`);
                     document.getElementById('copyKeyBtn').style.display = 'inline-block';
                     setSshLogOutput('Public key retrieved successfully.');
                 } else {
@@ -699,7 +697,7 @@
 
         function setSshKeyBox(text, isLoading = false) {
             const box = document.getElementById('sshKeyBox');
-            box.textContent = text || '';
+            box.innerHTML = text || '';
             box.style.display = 'block';
             box.className = 'ssh-key-box' + (isLoading ? ' loading' : '');
         }
@@ -710,7 +708,7 @@
 
         // Copy to clipboard functionality
         document.getElementById('copyKeyBtn').addEventListener('click', function() {
-            const keyText = document.getElementById('sshKeyBox').textContent;
+            const keyText = document.getElementById('sshKeyBox').innerHTML;
             
             if (navigator.clipboard) {
                 navigator.clipboard.writeText(keyText).then(() => {
