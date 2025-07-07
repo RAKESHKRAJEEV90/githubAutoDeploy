@@ -542,6 +542,7 @@ echo "Deployment completed successfully!"
     async getSshKey(req, res) {
         try {
             const pubKeyPath = path.join(os.homedir(), '.ssh', 'id_rsa.pub');
+            console.log('Looking for public key at:', pubKeyPath);
             const pubKey = await fs.readFile(pubKeyPath, 'utf8');
             res.json({ publicKey: pubKey });
         } catch (e) {
