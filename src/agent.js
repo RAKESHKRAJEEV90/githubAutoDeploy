@@ -546,6 +546,7 @@ echo "Deployment completed successfully!"
             const pubKey = await fs.readFile(pubKeyPath, 'utf8');
             res.json({ publicKey: pubKey });
         } catch (e) {
+            console.error('Failed to read public key:', e);
             res.status(404).json({ error: 'No SSH public key found' });
         }
     }
