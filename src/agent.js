@@ -512,7 +512,11 @@ class DeploymentAgent {
             const deployScriptPath = path.join(project.deployPath, project.deployScript);
             const deployProcess = spawn('bash', [deployScriptPath], {
                 cwd: project.deployPath,
-                stdio: ['pipe', 'pipe', 'pipe']
+                stdio: ['pipe', 'pipe', 'pipe'],
+                env: {
+                    ...process.env,
+                    PROJECT_NAME: projectName
+                }
             });
 
             let deployOutput = '';

@@ -3,9 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSH Key Management Dashboard</title>
+    <title>Git Auto-Deployment Agent</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/LOGO PSD.png">
+    <link rel="shortcut icon" type="image/png" href="assets/LOGO PSD.png">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Git Auto-Deployment Agent">
+    <meta property="og:description" content="Universal Git Auto-Deployment Agent for Raspberry Pi and Linux systems">
+    <meta property="og:image" content="assets/kautilya-og.jpeg">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Git Auto-Deployment Agent">
+    <meta name="twitter:description" content="Universal Git Auto-Deployment Agent for Raspberry Pi and Linux systems">
+    <meta name="twitter:image" content="assets/kautilya-og.jpeg">
+    
+    <!-- Additional Meta Tags -->
+    <meta name="description" content="Universal Git Auto-Deployment Agent for Raspberry Pi and Linux systems">
+    <meta name="keywords" content="git, deployment, raspberry pi, auto-deploy, nodejs, python, go">
+    <meta name="author" content="Git Auto-Deployment Agent">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --danger-gradient: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+            --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            
+            --glass-bg: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            
+            --text-primary: #1a1d29;
+            --text-secondary: #6c7293;
+            --text-muted: #9aa0ac;
+            --surface-primary: #ffffff;
+            --surface-secondary: #f8fafc;
+            --surface-elevated: #ffffff;
+            --border-color: #e2e8f0;
+            --border-hover: #cbd5e1;
+            
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+            --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+            
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,68 +72,156 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--primary-gradient);
+            background-attachment: fixed;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--glass-shadow);
             overflow: hidden;
+            position: relative;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
         }
 
         .header {
-            background: linear-gradient(135deg, #2c3e50, #3498db);
+            background: var(--dark-gradient);
             color: white;
-            padding: 30px;
+            padding: 48px 40px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
         }
 
         .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 300;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
         }
 
         .header p {
             opacity: 0.9;
-            font-size: 1.1em;
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
         }
 
         .tabs {
             display: flex;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
+            background: var(--surface-elevated);
+            border-bottom: 1px solid var(--border-color);
             overflow-x: auto;
+            position: relative;
+        }
+
+        .tabs::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
         }
 
         .tab {
-            padding: 15px 25px;
+            padding: 20px 32px;
             cursor: pointer;
             border: none;
             background: none;
             font-size: 16px;
             font-weight: 500;
-            color: #6c757d;
-            transition: all 0.3s ease;
+            color: var(--text-secondary);
+            transition: var(--transition);
             position: relative;
             white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .tab::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: transparent;
+            transition: var(--transition);
+            border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+        }
+
+        .tab:hover::before {
+            background: rgba(79, 172, 254, 0.04);
         }
 
         .tab:hover {
-            background: rgba(0, 123, 255, 0.1);
-            color: #007bff;
+            color: var(--text-primary);
         }
 
         .tab.active {
-            color: #007bff;
-            background: white;
+            color: #4facfe;
+            font-weight: 600;
+        }
+
+        .tab.active::before {
+            background: rgba(79, 172, 254, 0.08);
         }
 
         .tab.active::after {
@@ -84,39 +231,73 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: linear-gradient(90deg, #007bff, #0056b3);
+            background: var(--accent-gradient);
+            border-radius: 2px 2px 0 0;
         }
 
         .tab-content {
             display: none;
-            padding: 30px;
-            min-height: 500px;
+            padding: 40px;
+            min-height: 600px;
+            background: var(--surface-primary);
         }
 
         .tab-section h2 {
-            color: #2c3e50;
-            margin-bottom: 25px;
-            font-size: 1.8em;
-            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 32px;
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            position: relative;
+            padding-bottom: 16px;
+        }
+
+        .tab-section h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--accent-gradient);
+            border-radius: 2px;
         }
 
         .btn {
-            background: linear-gradient(135deg, #007bff, #0056b3);
+            background: var(--accent-gradient);
             color: white;
-            padding: 12px 24px;
+            padding: 14px 28px;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-md);
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            margin: 5px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+            font-family: inherit;
+            margin: 6px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: var(--transition);
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+            box-shadow: var(--shadow-md);
         }
 
         .btn:active {
@@ -124,38 +305,48 @@
         }
 
         .btn.copy-btn {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            background: var(--success-gradient);
         }
 
-        .btn.copy-btn:hover {
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        .btn.btn-stop {
+            background: var(--warning-gradient);
+        }
+
+        .btn.btn-delete {
+            background: var(--danger-gradient);
         }
 
         .ssh-key-box {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 20px 0;
-            font-family: 'Courier New', monospace;
+            background: var(--surface-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin: 24px 0;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
             font-size: 14px;
             word-break: break-all;
-            line-height: 1.6;
+            line-height: 1.7;
             position: relative;
-            min-height: 60px;
+            min-height: 80px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .ssh-key-box:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-md);
         }
 
         .ssh-key-box.loading::after {
             content: '';
             position: absolute;
-            right: 20px;
+            right: 24px;
             top: 50%;
             transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            border: 2px solid #e9ecef;
-            border-top: 2px solid #007bff;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid #4facfe;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -166,110 +357,143 @@
         }
 
         .test-ssh-result {
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 8px;
+            margin: 24px 0;
+            padding: 20px;
+            border-radius: var(--radius-lg);
             font-weight: 500;
+            box-shadow: var(--shadow-sm);
         }
 
         .success {
-            color: #155724;
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            padding: 10px 15px;
-            border-radius: 6px;
+            color: #0f766e;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border: 1px solid #6ee7b7;
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
             display: inline-block;
+            box-shadow: var(--shadow-sm);
         }
 
         .error {
-            color: #721c24;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            padding: 10px 15px;
-            border-radius: 6px;
+            color: #be123c;
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 1px solid #fca5a5;
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
             display: inline-block;
+            box-shadow: var(--shadow-sm);
         }
 
         details {
-            margin: 20px 0;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
+            margin: 24px 0;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
             overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        details:hover {
+            box-shadow: var(--shadow-md);
         }
 
         summary {
-            padding: 15px;
-            background: #f8f9fa;
+            padding: 20px;
+            background: var(--surface-secondary);
             cursor: pointer;
             font-weight: 500;
             user-select: none;
+            transition: var(--transition);
+            border-bottom: 1px solid transparent;
         }
 
         summary:hover {
-            background: #e9ecef;
+            background: var(--surface-elevated);
+            border-bottom-color: var(--border-color);
+        }
+
+        details[open] summary {
+            border-bottom-color: var(--border-color);
         }
 
         pre {
-            background: #f8f8f8;
-            border: 1px solid #e3e3e3;
-            padding: 15px;
-            border-radius: 6px;
-            max-height: 300px;
+            background: var(--surface-secondary);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            max-height: 400px;
             overflow: auto;
             font-size: 13px;
-            line-height: 1.5;
+            line-height: 1.6;
             margin: 0;
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
         }
 
         .troubleshoot {
-            margin-top: 15px;
-            padding: 15px;
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 8px;
-            color: #856404;
+            margin-top: 20px;
+            padding: 24px;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border: 1px solid #fbbf24;
+            border-radius: var(--radius-lg);
+            color: #92400e;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .troubleshoot h4 {
+            margin-bottom: 16px;
+            color: #78350f;
+            font-weight: 600;
         }
 
         .troubleshoot ul {
-            margin: 10px 0 0 20px;
+            margin: 16px 0 0 24px;
         }
 
         .troubleshoot li {
-            margin: 8px 0;
-            line-height: 1.5;
+            margin: 12px 0;
+            line-height: 1.6;
         }
 
         .troubleshoot code {
             background: rgba(0, 0, 0, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace;
+            font-size: 12px;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
-            color: #495057;
+            color: var(--text-primary);
+            font-size: 14px;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
+            padding: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
             font-size: 14px;
-            transition: all 0.3s ease;
+            font-family: inherit;
+            transition: var(--transition);
+            background: var(--surface-primary);
+            color: var(--text-primary);
         }
 
         .form-control:focus {
             outline: none;
-            border-color: #007bff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
         }
 
         select.form-control {
@@ -277,50 +501,55 @@
         }
 
         .logs-section {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            max-height: 400px;
+            background: var(--surface-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            max-height: 500px;
             overflow: auto;
+            box-shadow: var(--shadow-sm);
         }
 
         .next-steps {
-            margin-top: 30px;
-            padding: 25px;
-            background: linear-gradient(135deg, #f8fafd, #e3f2fd);
-            border-radius: 12px;
-            border: 1px solid #e3e3e3;
+            margin-top: 40px;
+            padding: 32px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
         }
 
         .next-steps h3 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 1.4em;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            font-size: 1.5rem;
+            font-weight: 600;
         }
 
         .next-steps ol {
-            margin-left: 25px;
+            margin-left: 32px;
             line-height: 1.8;
         }
 
         .next-steps li {
-            margin: 10px 0;
+            margin: 12px 0;
+            color: var(--text-secondary);
         }
 
         .tip {
-            margin-top: 15px;
-            padding: 12px;
-            background: rgba(0, 123, 255, 0.1);
-            border-left: 4px solid #007bff;
-            border-radius: 0 6px 6px 0;
-            font-size: 13px;
-            color: #495057;
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(79, 172, 254, 0.05);
+            border-left: 4px solid #4facfe;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            box-shadow: var(--shadow-sm);
         }
 
         .button-group {
-            margin-top: 20px;
+            margin-top: 24px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
@@ -330,19 +559,21 @@
             height: 12px;
             border-radius: 50%;
             margin-right: 8px;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
         }
 
         .status-indicator.online {
-            background: #28a745;
-            box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
+            background: #10b981;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
         }
 
         .status-indicator.offline {
-            background: #dc3545;
+            background: #ef4444;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
         }
 
         .status-indicator.loading {
-            background: #ffc107;
+            background: #f59e0b;
             animation: pulse 1.5s ease-in-out infinite alternate;
         }
 
@@ -352,27 +583,165 @@
         }
 
         mark {
-            background: #fff3cd;
-            padding: 2px 4px;
-            border-radius: 3px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            color: #92400e;
         }
 
+        /* Dashboard Table Styles */
+        .dashboard-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 12px;
+            background: transparent;
+            margin-top: 24px;
+        }
+
+        .dashboard-table th {
+            padding: 16px 20px;
+            text-align: left;
+            border: none;
+            background: var(--surface-secondary);
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+            letter-spacing: 0.02em;
+            border-radius: var(--radius-md);
+        }
+
+        .dashboard-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border: none;
+            background: var(--surface-primary);
+            vertical-align: middle;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+        }
+
+        .dashboard-table tr:hover td {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .dashboard-table tr.even td {
+            background: var(--surface-primary);
+        }
+
+        .dashboard-table tr.odd td {
+            background: var(--surface-elevated);
+        }
+
+        .dashboard-table button.btn {
+            margin: 2px 4px 2px 0;
+            min-width: 80px;
+            font-size: 12px;
+            padding: 8px 16px;
+        }
+
+        /* Switch Styles */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #cbd5e1;
+            transition: var(--transition);
+            border-radius: 24px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: '';
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background: white;
+            transition: var(--transition);
+            border-radius: 50%;
+            box-shadow: var(--shadow-sm);
+        }
+
+        input:checked + .slider {
+            background: #10b981;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background: var(--surface-primary);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-content h3 {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        /* Responsive Design */
         @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+            
             .container {
-                margin: 10px;
-                border-radius: 15px;
+                margin: 0;
+                border-radius: var(--radius-lg);
             }
             
             .header {
-                padding: 20px;
+                padding: 32px 24px;
             }
             
             .header h1 {
-                font-size: 2em;
+                font-size: 2.5rem;
             }
             
             .tab-content {
-                padding: 20px;
+                padding: 24px;
             }
             
             .button-group {
@@ -380,7 +749,63 @@
             }
             
             .btn {
-                margin: 5px 0;
+                margin: 4px 0;
+            }
+
+            .dashboard-table th,
+            .dashboard-table td {
+                padding: 12px 16px;
+                font-size: 14px;
+            }
+
+            .dashboard-table button.btn {
+                font-size: 11px;
+                min-width: 60px;
+                padding: 6px 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .tab {
+                padding: 16px 20px;
+                font-size: 14px;
+            }
+            
+            .tab-content {
+                padding: 20px;
+            }
+
+            .dashboard-table th,
+            .dashboard-table td {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+
+            .dashboard-table button.btn {
+                font-size: 10px;
+                min-width: 50px;
+                padding: 4px 8px;
+            }
+        }
+
+        /* Focus states for accessibility */
+        .btn:focus,
+        .form-control:focus,
+        .tab:focus {
+            outline: 2px solid #4facfe;
+            outline-offset: 2px;
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
@@ -388,8 +813,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>SSH Key Management Dashboard</h1>
-            <p>Secure authentication and project deployment made simple</p>
+            <div class="header-content">
+                <h1>SSH Key Management Dashboard</h1>
+                <p>Secure authentication and project deployment made simple</p>
+            </div>
         </div>
 
         <div class="tabs">
@@ -414,7 +841,7 @@
                 <h2>SSH Key Management</h2>
                 <p>Generate and manage SSH keys for secure Git repository access.</p>
                 
-                <div class="button-group" style="margin: 25px 0;">
+                <div class="button-group" style="margin: 32px 0;">
                     <button class="btn" onclick="generateSshKey()">
                         <span id="generateKeyStatus">Generate SSH Key</span>
                     </button>
@@ -429,7 +856,7 @@
                 
                 <div id="testSshResult" class="test-ssh-result"></div>
                 
-                <details id="sshLogPanel" style="margin-top: 25px;">
+                <details id="sshLogPanel" style="margin-top: 32px;">
                     <summary>SSH Command Log</summary>
                     <pre id="sshLogOutput">No logs available yet...</pre>
                 </details>
@@ -485,9 +912,10 @@
         <div class="tab-content" id="logs">
             <div class="tab-section">
                 <h2>Advanced Logs Viewer</h2>
-                <div style="margin-bottom: 10px; color: #007bff; font-size: 1em;">
+                <div style="margin-bottom: 24px; color: #4facfe; font-size: 1em; padding: 16px; background: rgba(79, 172, 254, 0.05); border-radius: 12px; border-left: 4px solid #4facfe;">
                     <strong>Note:</strong> Migration and deployment errors for each project will appear here. Select a project and click "View Log" to see the latest logs.
                 </div>
+                
                 
                 <div class="form-group">
                     <label for="logProjectSelect">Select Project:</label>
@@ -497,17 +925,23 @@
                 </div>
                 
                 <div class="button-group">
-                    <button class="btn" onclick="loadAdvancedLog()">View Log</button>
+                    <button class="btn" onclick="loadAdvancedLog()">
+                        <span class="status-indicator loading" style="display:none;"></span>
+                        View Log
+                    </button>
                     <button class="btn" onclick="downloadLog()">Download Log</button>
-                    <button class="btn" onclick="clearLogs()">Clear Display</button>
+                    <button class="btn btn-stop" onclick="clearLogs()">Clear Display</button>
                 </div>
                 
                 <div class="form-group">
-                    <input type="text" id="logSearch" class="form-control" placeholder="Search logs...">
+                    <input type="text" id="logSearch" class="form-control" placeholder="🔍 Search logs...">
                 </div>
                 
                 <div class="logs-section" id="advancedLogBox">
-                    <p style="padding: 20px; color: #6c757d; text-align: center;">Select a project and click "View Log" to see logs</p>
+                    <div style="padding: 40px; color: var(--text-muted); text-align: center; background: var(--surface-secondary); border-radius: var(--radius-lg); margin: 20px; border: 2px dashed var(--border-color);">
+                        <div style="font-size: 2.5rem; margin-bottom: 16px; opacity: 0.6;">📋</div>
+                        <p style="font-size: 1.1rem; font-weight: 500; margin: 0;">Select a project and click "View Log" to see logs</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -517,28 +951,37 @@
                 <h2>Help & Documentation</h2>
                 
                 <div id="helpContent" style="max-width: 800px; margin: 0 auto;">
-                    <p>Loading documentation...</p>
+                    <div style="padding: 40px; color: var(--text-muted); text-align: center; background: var(--surface-secondary); border-radius: var(--radius-lg); margin: 20px; border: 2px dashed var(--border-color);">
+                        <div class="spinner" style="margin-bottom: 16px;"></div>
+                        <p style="font-size: 1.1rem; font-weight: 500; margin: 0;">Loading documentation...</p>
+                    </div>
                 </div>
                 
                 <div class="next-steps">
                     <h3>What to do after SSH Key Generation?</h3>
                     <ol>
-                        <li>Click <strong>Show Public Key</strong> and copy the key</li>
+                        <li>Click <mark>Show Public Key</mark> and copy the key</li>
                         <li>Add the public key to your GitHub/GitLab/Bitbucket account</li>
-                        <li>Click <strong>Test SSH Connection</strong> to verify access</li>
-                        <li>Go to <strong>Migration</strong> tab to deploy projects</li>
-                        <li>Monitor deployment status from the <strong>Dashboard</strong></li>
-                        <li>Check <strong>Logs</strong> tab for troubleshooting</li>
+                        <li>Click <mark>Test SSH Connection</mark> to verify access</li>
+                        <li>Go to <mark>Migration</mark> tab to deploy projects</li>
+                        <li>Monitor deployment status from the <mark>Dashboard</mark></li>
+                        <li>Check <mark>Logs</mark> tab for troubleshooting</li>
                     </ol>
                     
                     <div class="tip">
-                        <strong>Tip:</strong> If you encounter issues, check the Logs tab for detailed error messages, or review the troubleshooting section in the Authentication tab.
+                        <strong>💡 Tip:</strong> If you encounter issues, check the Logs tab for detailed error messages, or review the troubleshooting section in the Authentication tab.
                     </div>
                     
                     <div class="button-group">
-                        <button class="btn" onclick="switchTab('dashboard')">Go to Dashboard</button>
-                        <button class="btn" onclick="switchTab('migration')">Go to Migration</button>
-                        <button class="btn" onclick="switchTab('logs')">View Logs</button>
+                        <button class="btn" onclick="switchTab('dashboard')">
+                            📊 Go to Dashboard
+                        </button>
+                        <button class="btn" onclick="switchTab('migration')">
+                            🚀 Go to Migration
+                        </button>
+                        <button class="btn" onclick="switchTab('logs')">
+                            📋 View Logs
+                        </button>
                     </div>
                 </div>
             </div>
@@ -546,34 +989,54 @@
     </div>
 
     <!-- Password Modal -->
-    <div id="passwordModal" class="modal" style="display: flex; position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); align-items: center; justify-content: center;">
-      <div class="modal-content" style="background: #fff; padding: 32px 24px; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.18); position: relative;">
-        <h3 style="margin-top:0;">Enter Agent Password</h3>
-        <input type="password" id="passwordInput" class="form-control" placeholder="Password" style="width:100%;margin-bottom:16px;">
-        <button class="btn" onclick="submitPassword()">Submit</button>
-        <div id="passwordError" class="error" style="margin-top:10px;display:none;"></div>
+    <div id="passwordModal" class="modal" style="display: flex; position: fixed; z-index: 1000; left: 0; top: 0; width: 100vw; height: 100vh; backdrop-filter: blur(8px); background: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+      <div class="modal-content" style="background: var(--surface-primary); padding: 40px 32px; border-radius: var(--radius-lg); width: 90%; max-width: 420px; box-shadow: var(--shadow-xl); position: relative; border: 1px solid var(--border-color);">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="width: 64px; height: 64px; background: var(--accent-gradient); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 24px;">🔐</div>
+          <h3 style="margin: 0; color: var(--text-primary); font-weight: 600;">Enter Agent Password</h3>
+        </div>
+        <input type="password" id="passwordInput" class="form-control" placeholder="Enter your password" style="width: 100%; margin-bottom: 24px; text-align: center;">
+        <button class="btn" onclick="submitPassword()" style="width: 100%; padding: 16px; font-size: 16px; font-weight: 600;">
+          🔓 Submit
+        </button>
+        <div id="passwordError" class="error" style="margin-top: 16px; display: none; text-align: center;"></div>
       </div>
     </div>
 
     <!-- Deploy Script Modal -->
-    <div id="deployScriptModal" class="modal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
-      <div class="modal-content" style="background:#fff; padding:24px; border-radius:12px; width:90%; max-width:700px; box-shadow:0 8px 32px rgba(0,0,0,0.18); position:relative;">
-        <h3 style="margin-top:0;">View/Edit deploy.sh</h3>
-        <pre id="deployScriptPath" style="font-size:13px; color:#888; margin-bottom:8px;"></pre>
-        <textarea id="deployScriptContent" style="width:100%; height:300px; font-family:monospace; font-size:14px; border-radius:8px; border:1px solid #e3e3e3; padding:12px;"></textarea>
-        <div style="margin-top:16px; text-align:right;">
-          <button class="btn" onclick="saveDeployScript()">Save</button>
-          <button class="btn" onclick="closeDeployScriptModal()">Close</button>
+    <div id="deployScriptModal" class="modal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100vw; height:100vh; backdrop-filter: blur(8px); background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+      <div class="modal-content" style="background: var(--surface-primary); padding: 32px; border-radius: var(--radius-lg); width: 90%; max-width: 800px; box-shadow: var(--shadow-xl); position: relative; border: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; margin-bottom: 24px;">
+          <div style="width: 48px; height: 48px; background: var(--dark-gradient); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 16px;">📝</div>
+          <h3 style="margin: 0; color: var(--text-primary); font-weight: 600;">View/Edit deploy.sh</h3>
         </div>
-        <div id="deployScriptSaveStatus" style="margin-top:10px; color:#28a745; display:none;"></div>
+        <pre id="deployScriptPath" style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; padding: 12px; background: var(--surface-secondary); border-radius: var(--radius-sm); border: 1px solid var(--border-color);"></pre>
+        <textarea id="deployScriptContent" style="width: 100%; height: 350px; font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace; font-size: 14px; border-radius: var(--radius-md); border: 2px solid var(--border-color); padding: 20px; background: var(--surface-secondary); color: var(--text-primary); line-height: 1.6; resize: vertical; transition: var(--transition);" placeholder="Deploy script content will appear here..."></textarea>
+        <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn copy-btn" onclick="saveDeployScript()">
+            💾 Save Changes
+          </button>
+          <button class="btn btn-stop" onclick="closeDeployScriptModal()">
+            ❌ Close
+          </button>
+        </div>
+        <div id="deployScriptSaveStatus" style="margin-top: 16px; display: none;">
+          <div class="success" style="text-align: center; font-weight: 500;">
+            ✅ Script saved successfully!
+          </div>
+        </div>
       </div>
     </div>
+
     <!-- Stylish Alert Modal -->
-    <div id="stylishAlertModal" class="modal" style="display:none; position:fixed; z-index:3000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
-      <div class="modal-content" style="background:#fff; padding:32px 24px; border-radius:12px; width:90%; max-width:400px; box-shadow:0 8px 32px rgba(0,0,0,0.18); position:relative; text-align:center;">
-        <h3 id="stylishAlertTitle" style="margin-top:0;"></h3>
-        <div id="stylishAlertMessage" style="margin:16px 0 0 0; font-size:1.1em;"></div>
-        <button class="btn" onclick="closeStylishAlert()" style="margin-top:24px;">OK</button>
+    <div id="stylishAlertModal" class="modal" style="display:none; position:fixed; z-index:3000; left:0; top:0; width:100vw; height:100vh; backdrop-filter: blur(8px); background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+      <div class="modal-content" style="background: var(--surface-primary); padding: 40px 32px; border-radius: var(--radius-lg); width: 90%; max-width: 450px; box-shadow: var(--shadow-xl); position: relative; text-align: center; border: 1px solid var(--border-color);">
+        <div style="width: 80px; height: 80px; background: var(--accent-gradient); border-radius: 50%; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center; font-size: 32px;">ℹ️</div>
+        <h3 id="stylishAlertTitle" style="margin: 0 0 16px 0; color: var(--text-primary); font-weight: 600; font-size: 1.5rem;"></h3>
+        <div id="stylishAlertMessage" style="margin: 0 0 32px 0; font-size: 1.1rem; color: var(--text-secondary); line-height: 1.6;"></div>
+        <button class="btn" onclick="closeStylishAlert()" style="padding: 16px 32px; font-size: 16px; font-weight: 600; min-width: 120px;">
+          ✅ OK
+        </button>
       </div>
     </div>
 

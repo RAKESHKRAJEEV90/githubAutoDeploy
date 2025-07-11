@@ -89,12 +89,12 @@ class ProjectMigrator {
 async function main() {
     const args = process.argv.slice(2);
     if (args.length < 3) {
-        console.log('Usage: node migrate.js <deploy-path> <name> <repo> [branch]');
+        console.log('Usage: node migrate.js <deploy-path> <name> <repo> [branch] [type]');
         process.exit(1);
     }
-    const [deployPath, name, repo, branch = 'main'] = args;
+    const [deployPath, name, repo, branch = 'main', type = 'nodejs'] = args;
     const migrator = new ProjectMigrator();
-    await migrator.migrateProject(deployPath, name, repo, branch);
+    await migrator.migrateProject(deployPath, name, repo, branch, type);
 }
 
 if (require.main === module) {
@@ -102,8 +102,8 @@ if (require.main === module) {
 }
 
 module.exports = {
-    migrateProject: async (projectPath, name, repo, branch) => {
+    migrateProject: async (projectPath, name, repo, branch, type) => {
         const migrator = new ProjectMigrator();
-        await migrator.migrateProject(projectPath, name, repo, branch);
+        await migrator.migrateProject(projectPath, name, repo, branch, type);
     }
 }; 
