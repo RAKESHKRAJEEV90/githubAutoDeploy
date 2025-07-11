@@ -488,6 +488,9 @@
         <div class="tab-content" id="logs">
             <div class="tab-section">
                 <h2>Advanced Logs Viewer</h2>
+                <div style="margin-bottom: 10px; color: #007bff; font-size: 1em;">
+                    <strong>Note:</strong> Migration and deployment errors for each project will appear here. Select a project and click "View Log" to see the latest logs.
+                </div>
                 
                 <div class="form-group">
                     <label for="logProjectSelect">Select Project:</label>
@@ -779,6 +782,9 @@
                 const migrateData = await migrateRes.json();
                 if (!migrateData.success) {
                     alert('Migration failed: ' + (migrateData.error || 'Unknown error'));
+                    // Auto-refresh logs for this project
+                    document.getElementById('logProjectSelect').value = projectName;
+                    loadAdvancedLog();
                     return;
                 }
                 // Then, trigger deployment
@@ -795,8 +801,14 @@
                 } else {
                     alert('Deployment failed: ' + (deployData.error || 'Unknown error'));
                 }
+                // Auto-refresh logs for this project
+                document.getElementById('logProjectSelect').value = projectName;
+                loadAdvancedLog();
             } catch (e) {
                 alert('Error deploying project: ' + e.message);
+                // Auto-refresh logs for this project
+                document.getElementById('logProjectSelect').value = projectName;
+                loadAdvancedLog();
             }
         }
 

@@ -580,6 +580,18 @@ echo "Deployment completed successfully!"
             await migrator.migrateProject(deployPath, name, repo, branch || 'main');
             res.json({ success: true });
         } catch (e) {
+            // Log migration error to project log and combined log
+            const timestamp = new Date().toISOString();
+            const logMsg = `\n[${timestamp}] Migration FAILED: ${e.message}\n`;
+            this.logger.error(`Migration failed for ${name}:`, e);
+            // Log to project log if possible
+            if (name && deployPath) {
+                const logFile = path.join(this.logsPath, `${name}.log`);
+                fs.appendFile(logFile, logMsg).catch(() => {});
+            }
+            // Also log to combined log
+            const combinedLogFile = path.join(this.logsPath, 'combined.log');
+            fs.appendFile(combinedLogFile, logMsg).catch(() => {});
             res.status(500).json({ error: e.message });
         }
     }

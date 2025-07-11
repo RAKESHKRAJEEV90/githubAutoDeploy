@@ -78,4 +78,11 @@ async function main() {
 
 if (require.main === module) {
     main();
-} 
+}
+
+module.exports = {
+    migrateProject: async (projectPath, name, repo, branch) => {
+        const migrator = new ProjectMigrator();
+        await migrator.migrateProject(projectPath, name, repo, branch);
+    }
+}; 
