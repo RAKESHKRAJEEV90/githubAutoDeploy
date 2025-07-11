@@ -46,7 +46,14 @@ class ProjectMigrator {
                 projects = JSON.parse(data);
             } catch {}
             projects[name] = project;
-            await fs.writeFile(this.projectsPath, JSON.stringify(projects, null, 2));
+            // Log the absolute path before writing
+            console.log('Writing to projects.json at:', this.projectsPath);
+            try {
+                await fs.writeFile(this.projectsPath, JSON.stringify(projects, null, 2));
+            } catch (err) {
+                console.error('Failed to write projects.json:', err);
+                throw err;
+            }
             // Create deploy.sh if not present
             const deployScriptPath = path.join(absolutePath, 'deploy.sh');
             try {

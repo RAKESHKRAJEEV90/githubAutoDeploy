@@ -578,7 +578,9 @@ echo "Deployment completed successfully!"
         try {
             const migrator = require('../scripts/migrate.js');
             await migrator.migrateProject(deployPath, name, repo, branch || 'main');
-            res.json({ success: true });
+            // Reload projects.json into memory after migration
+            await this.loadConfiguration();
+            res.json({ success: true, projects: this.projects });
         } catch (e) {
             // Log migration error to project log and combined log
             const timestamp = new Date().toISOString();
