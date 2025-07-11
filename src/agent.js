@@ -168,7 +168,8 @@ class DeploymentAgent {
                     lastCommit: null,
                     lastDeployment: null,
                     status: 'inactive',
-                    deploymentHistory: []
+                    deploymentHistory: [],
+                    type: 'custom' // Default to custom
                 };
 
                 this.projects[name] = project;
@@ -308,12 +309,25 @@ class DeploymentAgent {
                 await execAsync(`git clone ${project.repoUrl} ${project.deployPath}`);
             }
 
-            // Create default deploy script if it doesn't exist
+            // Create deploy.sh from template if type is provided
             const deployScriptPath = path.join(project.deployPath, project.deployScript);
-            try {
-                await fs.access(deployScriptPath);
-            } catch {
-                await this.createDefaultDeployScript(project);
+            let templateFile = null;
+            if (project.type && project.type !== 'custom') {
+                templateFile = path.join(__dirname, '../templates', `deploy-${project.type}.sh`);
+                try {
+                    await fs.copyFile(templateFile, deployScriptPath);
+                    await execAsync(`chmod +x ${deployScriptPath}`);
+                    this.logger.info(`Deploy script created from template: deploy-${project.type}.sh`);
+                } catch (err) {
+                    this.logger.warn(`Could not copy template for type ${project.type}, using default. ${err.message}`);
+                    await this.createDefaultDeployScript(project);
+                }
+            } else {
+                try {
+                    await fs.access(deployScriptPath);
+                } catch {
+                    await this.createDefaultDeployScript(project);
+                }
             }
 
             project.status = 'ready';
@@ -328,28 +342,16 @@ class DeploymentAgent {
 
     async createDefaultDeployScript(project) {
         const deployScriptPath = path.join(project.deployPath, project.deployScript);
-        const defaultScript = `#!/bin/bash
-# Auto-generated deploy script for ${project.name}
-set -e
-
-echo "Starting deployment for ${project.name}..."
-
-# Pull latest changes
-git pull origin ${project.branch}
-
-# Install dependencies (uncomment as needed)
-# npm install
-# pip install -r requirements.txt
-# go mod download
-
-# Build project (uncomment as needed)
-# npm run build
-# go build
-# python setup.py build
-
-echo "Deployment completed successfully!"
-`;
-
+        let defaultScript = `#!/bin/bash\necho "Deploying ${project.name}..."\n`;
+        // Add pm2 start/pm2 save for nodejs/python/go
+        if (project.type === 'nodejs') {
+            defaultScript += `\npm install\npm run build || true\npm run start || pm2 start server.js --name ${project.name}\npm run pm2 save || pm2 save\n`;
+        } else if (project.type === 'python') {
+            defaultScript += `\npip install -r requirements.txt || true\npython3 main.py || pm2 start main.py --interpreter python3 --name ${project.name}\npm run pm2 save || pm2 save\n`;
+        } else if (project.type === 'go') {
+            defaultScript += `\ngo mod download || true\ngo build -o app\n./app || pm2 start ./app --name ${project.name}\npm run pm2 save || pm2 save\n`;
+        }
+        defaultScript += `\necho "Deployment completed successfully!"\n`;
         await fs.writeFile(deployScriptPath, defaultScript);
         await execAsync(`chmod +x ${deployScriptPath}`);
         this.logger.info(`Created default deploy script for ${project.name}`);

@@ -13,7 +13,7 @@ class ProjectMigrator {
         this.projectsPath = path.join(this.configPath, 'projects.json');
     }
 
-    async migrateProject(projectPath, name, repo, branch) {
+    async migrateProject(projectPath, name, repo, branch, type) {
         console.log(`🔄 Migrating project: ${name}`);
         try {
             const absolutePath = path.resolve(projectPath);
@@ -38,7 +38,8 @@ class ProjectMigrator {
                 lastCommit: null,
                 lastDeployment: null,
                 status: 'ready',
-                deploymentHistory: []
+                deploymentHistory: [],
+                type: type || 'custom'
             };
             let projects = {};
             try {
@@ -46,7 +47,6 @@ class ProjectMigrator {
                 projects = JSON.parse(data);
             } catch {}
             projects[name] = project;
-            // Log the absolute path before writing
             console.log('Writing to projects.json at:', this.projectsPath);
             try {
                 await fs.writeFile(this.projectsPath, JSON.stringify(projects, null, 2));
@@ -54,15 +54,29 @@ class ProjectMigrator {
                 console.error('Failed to write projects.json:', err);
                 throw err;
             }
-            // Create deploy.sh if not present
+            // Create deploy.sh from template if type is provided
             const deployScriptPath = path.join(absolutePath, 'deploy.sh');
-            try {
-                await fs.access(deployScriptPath);
-                console.log('✅ Deploy script already exists');
-            } catch {
-                await fs.writeFile(deployScriptPath, '#!/bin/bash\necho "Deploying ' + name + '..."\n');
-                await execAsync(`chmod +x ${deployScriptPath}`);
-                console.log('✅ Deploy script created');
+            let templateFile = null;
+            if (type && type !== 'custom') {
+                templateFile = path.join(__dirname, '../templates', `deploy-${type}.sh`);
+                try {
+                    await fs.copyFile(templateFile, deployScriptPath);
+                    await execAsync(`chmod +x ${deployScriptPath}`);
+                    console.log(`✅ Deploy script created from template: deploy-${type}.sh`);
+                } catch (err) {
+                    console.warn(`⚠️ Could not copy template for type ${type}, using minimal default.`, err.message);
+                    await fs.writeFile(deployScriptPath, '#!/bin/bash\necho "Deploying ' + name + '..."\n');
+                    await execAsync(`chmod +x ${deployScriptPath}`);
+                }
+            } else {
+                try {
+                    await fs.access(deployScriptPath);
+                    console.log('✅ Deploy script already exists');
+                } catch {
+                    await fs.writeFile(deployScriptPath, '#!/bin/bash\necho "Deploying ' + name + '..."\n');
+                    await execAsync(`chmod +x ${deployScriptPath}`);
+                    console.log('✅ Deploy script created');
+                }
             }
             console.log(`✅ Project "${name}" migrated successfully`);
         } catch (error) {

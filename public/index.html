@@ -468,6 +468,16 @@
                     <label for="branch">Branch (optional, default: main):</label>
                     <input type="text" id="branch" class="form-control" placeholder="main">
                 </div>
+                <div class="form-group">
+                    <label for="projectType">Project Type:</label>
+                    <select id="projectType" class="form-control">
+                        <option value="nodejs">Node.js</option>
+                        <option value="python">Python</option>
+                        <option value="go">Go</option>
+                        <option value="static">Static</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
                 <button class="btn" onclick="deployProject()">Deploy Project</button>
             </div>
         </div>
@@ -746,15 +756,14 @@
         async function deployProject() {
             const projectName = document.getElementById('projectName').value.trim();
             const gitRepo = document.getElementById('gitRepo').value.trim();
-            // Add deploy path and branch fields
             let deployPath = document.getElementById('deployPath') ? document.getElementById('deployPath').value.trim() : '';
             let branch = document.getElementById('branch') ? document.getElementById('branch').value.trim() : 'main';
+            let type = document.getElementById('projectType') ? document.getElementById('projectType').value : 'nodejs';
             if (!projectName || !gitRepo || !deployPath) {
                 alert('Please fill in project name, Git repository URL, and deploy path.');
                 return;
             }
             try {
-                // First, migrate/add the project
                 const migrateRes = await fetch('/api/migrate', {
                     method: 'POST',
                     headers: {
@@ -765,18 +774,17 @@
                         deployPath: deployPath,
                         name: projectName,
                         repo: gitRepo,
-                        branch: branch
+                        branch: branch,
+                        type: type
                     })
                 });
                 const migrateData = await migrateRes.json();
                 if (!migrateData.success) {
                     alert('Migration failed: ' + (migrateData.error || 'Unknown error'));
-                    // Auto-refresh logs for this project
                     document.getElementById('logProjectSelect').value = projectName;
                     loadAdvancedLog();
                     return;
                 }
-                // Then, trigger deployment
                 const deployRes = await fetch(`/api/deploy/${encodeURIComponent(projectName)}`, {
                     method: 'POST',
                     headers: {
@@ -790,14 +798,14 @@
                 } else {
                     alert('Deployment failed: ' + (deployData.error || 'Unknown error'));
                 }
-                // Auto-refresh logs for this project
                 document.getElementById('logProjectSelect').value = projectName;
                 loadAdvancedLog();
+                loadDashboardProjects();
             } catch (e) {
                 alert('Error deploying project: ' + e.message);
-                // Auto-refresh logs for this project
                 document.getElementById('logProjectSelect').value = projectName;
                 loadAdvancedLog();
+                loadDashboardProjects();
             }
         }
 
@@ -901,19 +909,28 @@
                     return;
                 }
                 let html = `<table style='width:100%;border-collapse:collapse;margin-top:20px;'>` +
-                    `<tr style='background:#f8f9fa;'><th style='padding:8px;border:1px solid #e9ecef;'>Name</th><th style='padding:8px;border:1px solid #e9ecef;'>Status</th><th style='padding:8px;border:1px solid #e9ecef;'>Last Deployment</th><th style='padding:8px;border:1px solid #e9ecef;'>Last Commit</th><th style='padding:8px;border:1px solid #e9ecef;'>Actions</th></tr>`;
+                    `<tr style='background:#f8f9fa;'><th>Name</th><th>Type</th><th>Status</th><th>Last Deployment</th><th>Last Commit</th><th>Actions</th></tr>`;
                 for (const [name, project] of Object.entries(projects)) {
                     let statusColor = '#6c757d';
                     if (project.status === 'ready') statusColor = '#28a745';
                     else if (project.status === 'deploying') statusColor = '#ffc107';
                     else if (project.status === 'error') statusColor = '#dc3545';
                     html += `<tr>` +
-                        `<td style='padding:8px;border:1px solid #e9ecef;'>${name}</td>` +
-                        `<td style='padding:8px;border:1px solid #e9ecef;'><span style='display:inline-block;width:12px;height:12px;border-radius:50%;background:${statusColor};margin-right:8px;'></span>${project.status || 'unknown'}</td>` +
-                        `<td style='padding:8px;border:1px solid #e9ecef;'>${project.lastDeployment || '-'}</td>` +
-                        `<td style='padding:8px;border:1px solid #e9ecef;'>${project.lastCommit || '-'}</td>` +
-                        `<td style='padding:8px;border:1px solid #e9ecef;'><button class='btn' onclick='deployProjectFromDashboard("${name}")'>Deploy</button></td>` +
+                        `<td>${name}</td>` +
+                        `<td>${project.type || '-'}</td>` +
+                        `<td><span style='display:inline-block;width:12px;height:12px;border-radius:50%;background:${statusColor};margin-right:8px;'></span>${project.status || 'unknown'}</td>` +
+                        `<td>${project.lastDeployment || '-'}</td>` +
+                        `<td>${project.lastCommit || '-'}</td>` +
+                        `<td><button class='btn' onclick='deployProjectFromDashboard("${name}")'>Deploy</button> <button class='btn' onclick='viewLog("${name}")'>View Log</button> <button class='btn' onclick='viewDeployScript("${name}")'>View/Edit deploy.sh</button></td>` +
                         `</tr>`;
+                    // Deployment history (last 3)
+                    if (project.deploymentHistory && project.deploymentHistory.length > 0) {
+                        html += `<tr><td colspan='6'><details><summary>Deployment History (last 3)</summary><ul style='margin:0;padding:0 0 0 20px;'>`;
+                        project.deploymentHistory.slice(0,3).forEach(h => {
+                            html += `<li>${h.timestamp}: <b>${h.success ? 'Success' : 'Fail'}</b> - ${h.commit || ''} ${h.error ? ('<span style=\'color:#dc3545\'>' + h.error + '</span>') : ''}</li>`;
+                        });
+                        html += `</ul></details></td></tr>`;
+                    }
                 }
                 html += `</table>`;
                 dashboard.innerHTML = html;
