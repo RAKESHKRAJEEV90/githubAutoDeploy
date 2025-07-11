@@ -662,13 +662,13 @@ class DeploymentAgent {
     }
     // --- Project Migration ---
     async migrateProject(req, res) {
-        const { deployPath, name, repo, branch } = req.body;
+        const { deployPath, name, repo, branch, type } = req.body;
         if (!deployPath || !name || !repo) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         try {
             const migrator = require('../scripts/migrate.js');
-            await migrator.migrateProject(deployPath, name, repo, branch || 'main');
+            await migrator.migrateProject(deployPath, name, repo, branch || 'main', type || 'nodejs');
             // Reload projects.json into memory after migration
             await this.loadConfiguration();
             res.json({ success: true, projects: this.projects });

@@ -12,4 +12,11 @@ if npm run | grep -q "build"; then
 fi
 # npm run migrate
 
+echo "🔄 Restarting app with PM2..."
+if pm2 list | grep -q "app.js"; then
+    pm2 restart app.js --name "$PROJECT_NAME"
+else
+    pm2 start app.js --name "$PROJECT_NAME"
+fi
+pm2 save
 echo "✅ Node.js deployment completed successfully!" 
