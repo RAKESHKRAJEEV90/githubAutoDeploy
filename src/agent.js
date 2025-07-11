@@ -81,6 +81,12 @@ class DeploymentAgent {
             try {
                 const projectsData = await fs.readFile(this.projectsPath, 'utf8');
                 this.projects = JSON.parse(projectsData);
+                // Ensure pollingEnabled is set for all projects
+                for (const name in this.projects) {
+                    if (typeof this.projects[name].pollingEnabled === 'undefined') {
+                        this.projects[name].pollingEnabled = true;
+                    }
+                }
             } catch (error) {
                 this.projects = {};
                 await this.saveProjects();
@@ -169,7 +175,8 @@ class DeploymentAgent {
                     lastDeployment: null,
                     status: 'inactive',
                     deploymentHistory: [],
-                    type: 'custom' // Default to custom
+                    type: 'custom', // Default to custom
+                    pollingEnabled: true // Default to true
                 };
 
                 this.projects[name] = project;
@@ -185,20 +192,102 @@ class DeploymentAgent {
             }
         });
 
-        this.app.delete('/api/projects/:name', async (req, res) => {
+        // --- Deploy Script API ---
+        this.app.get('/api/projects/:name/deploy-script', async (req, res) => {
+            const { name } = req.params;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ success: false, error: 'Project not found' });
+            const deployScriptPath = path.join(project.deployPath, project.deployScript);
             try {
-                const { name } = req.params;
-                
-                if (!this.projects[name]) {
-                    return res.status(404).json({ error: 'Project not found' });
+                const content = await fs.readFile(deployScriptPath, 'utf8');
+                res.json({ success: true, content });
+            } catch (e) {
+                res.json({ success: false, error: e.message });
+            }
+        });
+        this.app.post('/api/projects/:name/deploy-script', async (req, res) => {
+            const { name } = req.params;
+            const { content } = req.body;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ success: false, error: 'Project not found' });
+            const deployScriptPath = path.join(project.deployPath, project.deployScript);
+            try {
+                await fs.writeFile(deployScriptPath, content, 'utf8');
+                await execAsync(`chmod +x ${deployScriptPath}`);
+                res.json({ success: true });
+            } catch (e) {
+                res.json({ success: false, error: e.message });
+            }
+        });
+        // --- Stop Project (pm2) ---
+        this.app.post('/api/projects/:name/stop', async (req, res) => {
+            const { name } = req.params;
+            try {
+                await execAsync(`pm2 stop ${name}`);
+                res.json({ success: true });
+            } catch (e) {
+                res.json({ success: false, error: e.message });
+            }
+        });
+        // --- Toggle Polling (Auto-Update) ---
+        this.app.post('/api/projects/:name/polling', async (req, res) => {
+            const { name } = req.params;
+            const { enabled } = req.body;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            project.pollingEnabled = !!enabled;
+            await this.saveProjects();
+            res.json({ success: true, pollingEnabled: project.pollingEnabled });
+        });
+        // --- Advanced Log Viewing ---
+        this.app.get('/api/projects/:name/log', async (req, res) => {
+            const { name } = req.params;
+            const { search, lines } = req.query;
+            const logFile = path.join(this.logsPath, `${name}.log`);
+            try {
+                let logContent = await fs.readFile(logFile, 'utf8');
+                let logLines = logContent.split('\n');
+                let n = parseInt(lines) || 200;
+                if (search) {
+                    logLines = logLines.filter(line => line.toLowerCase().includes(search.toLowerCase()));
                 }
-
+                logLines = logLines.slice(-n);
+                res.json({ success: true, logs: logLines });
+            } catch (e) {
+                res.json({ success: false, logs: [], error: e.message });
+            }
+        });
+        this.app.get('/api/projects/:name/log/download', async (req, res) => {
+            const { name } = req.params;
+            const logFile = path.join(this.logsPath, `${name}.log`);
+            try {
+                res.download(logFile);
+            } catch (e) {
+                res.status(404).send('Log not found');
+            }
+        });
+        // --- Delete Project (with folder and log deletion) ---
+        this.app.delete('/api/projects/:name', async (req, res) => {
+            const { name } = req.params;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            try {
+                // Stop pm2 process
+                await execAsync(`pm2 stop ${name} || true`);
+                await execAsync(`pm2 delete ${name} || true`);
+                // Remove project folder
+                if (project.deployPath && project.deployPath.length > 8 && project.deployPath !== '/') {
+                    await fs.rm(project.deployPath, { recursive: true, force: true });
+                }
+                // Remove log file
+                const logFile = path.join(this.logsPath, `${name}.log`);
+                try { await fs.unlink(logFile); } catch {}
+                // Remove from config
                 delete this.projects[name];
                 await this.saveProjects();
-                
                 res.json({ success: true });
-            } catch (error) {
-                res.status(500).json({ error: error.message });
+            } catch (e) {
+                res.status(500).json({ error: e.message });
             }
         });
 
@@ -512,7 +601,7 @@ class DeploymentAgent {
             this.logger.debug('Starting polling cycle');
             
             for (const [name, project] of Object.entries(this.projects)) {
-                if (project.status === 'ready') {
+                if (project.status === 'ready' && project.pollingEnabled !== false) {
                     await this.queueDeployment(name, 'polling');
                 }
             }

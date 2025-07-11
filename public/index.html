@@ -555,6 +555,28 @@
       </div>
     </div>
 
+    <!-- Deploy Script Modal -->
+    <div id="deployScriptModal" class="modal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
+      <div class="modal-content" style="background:#fff; padding:24px; border-radius:12px; width:90%; max-width:700px; box-shadow:0 8px 32px rgba(0,0,0,0.18); position:relative;">
+        <h3 style="margin-top:0;">View/Edit deploy.sh</h3>
+        <pre id="deployScriptPath" style="font-size:13px; color:#888; margin-bottom:8px;"></pre>
+        <textarea id="deployScriptContent" style="width:100%; height:300px; font-family:monospace; font-size:14px; border-radius:8px; border:1px solid #e3e3e3; padding:12px;"></textarea>
+        <div style="margin-top:16px; text-align:right;">
+          <button class="btn" onclick="saveDeployScript()">Save</button>
+          <button class="btn" onclick="closeDeployScriptModal()">Close</button>
+        </div>
+        <div id="deployScriptSaveStatus" style="margin-top:10px; color:#28a745; display:none;"></div>
+      </div>
+    </div>
+    <!-- Stylish Alert Modal -->
+    <div id="stylishAlertModal" class="modal" style="display:none; position:fixed; z-index:3000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;">
+      <div class="modal-content" style="background:#fff; padding:32px 24px; border-radius:12px; width:90%; max-width:400px; box-shadow:0 8px 32px rgba(0,0,0,0.18); position:relative; text-align:center;">
+        <h3 id="stylishAlertTitle" style="margin-top:0;"></h3>
+        <div id="stylishAlertMessage" style="margin:16px 0 0 0; font-size:1.1em;"></div>
+        <button class="btn" onclick="closeStylishAlert()" style="margin-top:24px;">OK</button>
+      </div>
+    </div>
+
     <script>
         // Global variables
         let agentPassword = sessionStorage.getItem('agentPassword') || '';
@@ -565,6 +587,26 @@
             initializeTabs();
             loadProjectListForLogs();
             loadDashboardProjects();
+            // Add event listeners for new buttons
+            document.querySelectorAll('.dashboard-table button.btn-stop').forEach(button => {
+                button.addEventListener('click', function() {
+                    const name = this.getAttribute('onclick').match(/confirmStopProject\("([^"]+)"\)/)[1];
+                    confirmStopProject(name);
+                });
+            });
+            document.querySelectorAll('.dashboard-table button.btn-delete').forEach(button => {
+                button.addEventListener('click', function() {
+                    const name = this.getAttribute('onclick').match(/confirmDeleteProject\("([^"]+)"\)/)[1];
+                    confirmDeleteProject(name);
+                });
+            });
+            // Add styles for new buttons
+            const style = document.createElement('style');
+            style.innerHTML = `
+            .dashboard-table button.btn-stop { background: linear-gradient(135deg, #ffc107, #ff9800); color: #333; }
+            .dashboard-table button.btn-delete { background: linear-gradient(135deg, #dc3545, #b71c1c); color: #fff; }
+            `;
+            document.head.appendChild(style);
         });
 
         // Tab management
@@ -780,7 +822,7 @@
                 });
                 const migrateData = await migrateRes.json();
                 if (!migrateData.success) {
-                    alert('Migration failed: ' + (migrateData.error || 'Unknown error'));
+                    showStylishAlert('Migration Failed', migrateData.error || 'Unknown error');
                     document.getElementById('logProjectSelect').value = projectName;
                     loadAdvancedLog();
                     return;
@@ -793,16 +835,18 @@
                 });
                 const deployData = await deployRes.json();
                 if (deployData.success) {
-                    alert('Project deployment started successfully!');
+                    showStylishAlert('Success', 'Project migration and deployment started!', function() {
+                        switchTab('dashboard');
+                    });
                     loadProjectListForLogs();
                 } else {
-                    alert('Deployment failed: ' + (deployData.error || 'Unknown error'));
+                    showStylishAlert('Deployment Failed', deployData.error || 'Unknown error');
                 }
                 document.getElementById('logProjectSelect').value = projectName;
                 loadAdvancedLog();
                 loadDashboardProjects();
             } catch (e) {
-                alert('Error deploying project: ' + e.message);
+                showStylishAlert('Error', e.message);
                 document.getElementById('logProjectSelect').value = projectName;
                 loadAdvancedLog();
                 loadDashboardProjects();
@@ -908,31 +952,37 @@
                     dashboard.innerHTML = '<p>No projects found. Use the Migration tab to add one.</p>';
                     return;
                 }
-                let html = `<table style='width:100%;border-collapse:collapse;margin-top:20px;'>` +
-                    `<tr style='background:#f8f9fa;'><th>Name</th><th>Type</th><th>Status</th><th>Last Deployment</th><th>Last Commit</th><th>Actions</th></tr>`;
+                let html = `<div style='overflow-x:auto;'><table class='dashboard-table'>` +
+                    `<tr><th>Name</th><th>Type</th><th>Status</th><th>Auto-Update</th><th>Last Deployment</th><th>Last Commit</th><th>Actions</th></tr>`;
+                let rowIdx = 0;
                 for (const [name, project] of Object.entries(projects)) {
                     let statusColor = '#6c757d';
+                    let statusContent = project.status || 'unknown';
                     if (project.status === 'ready') statusColor = '#28a745';
-                    else if (project.status === 'deploying') statusColor = '#ffc107';
+                    else if (project.status === 'deploying') {
+                        statusColor = '#ffc107';
+                        statusContent = `<span class='spinner'></span> deploying`;
+                    }
                     else if (project.status === 'error') statusColor = '#dc3545';
-                    html += `<tr>` +
+                    html += `<tr class='${rowIdx % 2 === 0 ? 'even' : 'odd'}'>` +
                         `<td>${name}</td>` +
                         `<td>${project.type || '-'}</td>` +
-                        `<td><span style='display:inline-block;width:12px;height:12px;border-radius:50%;background:${statusColor};margin-right:8px;'></span>${project.status || 'unknown'}</td>` +
+                        `<td><span style='display:inline-block;width:12px;height:12px;border-radius:50%;background:${statusColor};margin-right:8px;'></span>${statusContent}</td>` +
+                        `<td><label class='switch'><input type='checkbox' onchange='togglePolling("${name}", this.checked)' ${project.pollingEnabled !== false ? 'checked' : ''}><span class='slider'></span></label></td>` +
                         `<td>${project.lastDeployment || '-'}</td>` +
                         `<td>${project.lastCommit || '-'}</td>` +
-                        `<td><button class='btn' onclick='deployProjectFromDashboard("${name}")'>Deploy</button> <button class='btn' onclick='viewLog("${name}")'>View Log</button> <button class='btn' onclick='viewDeployScript("${name}")'>View/Edit deploy.sh</button></td>` +
+                        `<td style='min-width:260px;'><button class='btn' onclick='deployProjectFromDashboard("${name}")'>Deploy</button> <button class='btn' onclick='openLogModal("${name}")'>View Log</button> <button class='btn' onclick='viewDeployScript("${name}")'>View/Edit deploy.sh</button> <button class='btn btn-stop' onclick='confirmStopProject("${name}")'>Stop</button> <button class='btn btn-delete' onclick='confirmDeleteProject("${name}")'>Delete</button></td>` +
                         `</tr>`;
-                    // Deployment history (last 3)
                     if (project.deploymentHistory && project.deploymentHistory.length > 0) {
-                        html += `<tr><td colspan='6'><details><summary>Deployment History (last 3)</summary><ul style='margin:0;padding:0 0 0 20px;'>`;
+                        html += `<tr><td colspan='7'><details><summary>Deployment History (last 3)</summary><ul style='margin:0;padding:0 0 0 20px;'>`;
                         project.deploymentHistory.slice(0,3).forEach(h => {
                             html += `<li>${h.timestamp}: <b>${h.success ? 'Success' : 'Fail'}</b> - ${h.commit || ''} ${h.error ? ('<span style=\'color:#dc3545\'>' + h.error + '</span>') : ''}</li>`;
                         });
                         html += `</ul></details></td></tr>`;
                     }
+                    rowIdx++;
                 }
-                html += `</table>`;
+                html += `</table></div>`;
                 dashboard.innerHTML = html;
             } catch (e) {
                 dashboard.innerHTML = `<p style='color:#dc3545;'>Error loading projects: ${e.message}</p>`;
@@ -998,6 +1048,204 @@
         }
         // On load, set indicator
         document.addEventListener('DOMContentLoaded', updateTabIndicator);
+
+        // --- Deploy Script Modal Functions ---
+        async function viewDeployScript(projectName) {
+            if (!projectName) return;
+            const modal = document.getElementById('deployScriptModal');
+            const textarea = document.getElementById('deployScriptContent');
+            const pathPre = document.getElementById('deployScriptPath');
+            const saveStatus = document.getElementById('deployScriptSaveStatus');
+            saveStatus.style.display = 'none';
+            pathPre.textContent = `projects/${projectName}/deploy.sh`;
+            textarea.value = 'Loading...';
+            modal.style.display = 'flex';
+            try {
+                const res = await fetch(`/api/projects/${encodeURIComponent(projectName)}/deploy-script`, {
+                    headers: { 'x-agent-password': agentPassword }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    textarea.value = data.content;
+                } else {
+                    textarea.value = 'Error: ' + (data.error || 'Could not load deploy.sh');
+                }
+            } catch (e) {
+                textarea.value = 'Error: ' + e.message;
+            }
+            // Save project name for saving
+            textarea.setAttribute('data-project', projectName);
+        }
+        function closeDeployScriptModal() {
+            document.getElementById('deployScriptModal').style.display = 'none';
+        }
+        async function saveDeployScript() {
+            const textarea = document.getElementById('deployScriptContent');
+            const projectName = textarea.getAttribute('data-project');
+            const content = textarea.value;
+            const saveStatus = document.getElementById('deployScriptSaveStatus');
+            saveStatus.style.display = 'none';
+            try {
+                const res = await fetch(`/api/projects/${encodeURIComponent(projectName)}/deploy-script`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-agent-password': agentPassword
+                    },
+                    body: JSON.stringify({ content })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    saveStatus.textContent = 'Saved!';
+                    saveStatus.style.color = '#28a745';
+                } else {
+                    saveStatus.textContent = 'Error: ' + (data.error || 'Could not save');
+                    saveStatus.style.color = '#dc3545';
+                }
+                saveStatus.style.display = 'block';
+            } catch (e) {
+                saveStatus.textContent = 'Error: ' + e.message;
+                saveStatus.style.color = '#dc3545';
+                saveStatus.style.display = 'block';
+            }
+        }
+        // --- Stylish Alert Modal Functions ---
+        function showStylishAlert(title, message, callback) {
+            document.getElementById('stylishAlertTitle').textContent = title;
+            document.getElementById('stylishAlertMessage').innerHTML = message;
+            document.getElementById('stylishAlertModal').style.display = 'flex';
+            document.getElementById('stylishAlertModal').setAttribute('data-callback', callback ? '1' : '');
+            document.getElementById('stylishAlertModal').callback = callback;
+        }
+        function closeStylishAlert() {
+            document.getElementById('stylishAlertModal').style.display = 'none';
+            const cb = document.getElementById('stylishAlertModal').callback;
+            if (typeof cb === 'function') cb();
+        }
+        // --- Stop/Delete Project Functions ---
+        function confirmStopProject(name) {
+            showStylishAlert('Stop Project', `Are you sure you want to stop <b>${name}</b>?`, function() {
+                stopProject(name);
+            });
+        }
+        async function stopProject(name) {
+            try {
+                const res = await fetch(`/api/projects/${encodeURIComponent(name)}/stop`, {
+                    method: 'POST',
+                    headers: { 'x-agent-password': agentPassword }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStylishAlert('Stopped', `Project <b>${name}</b> stopped.`, loadDashboardProjects);
+                } else {
+                    showStylishAlert('Error', data.error || 'Could not stop project.');
+                }
+            } catch (e) {
+                showStylishAlert('Error', e.message);
+            }
+        }
+        // --- Dashboard Table Styles ---
+        const style = document.createElement('style');
+        style.innerHTML = `
+        .dashboard-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; background: #fff; }
+        .dashboard-table th, .dashboard-table td { padding: 12px 10px; text-align: left; border: none; }
+        .dashboard-table th { background: #f8f9fa; font-weight: 600; }
+        .dashboard-table tr.even { background: #f4f8fb; }
+        .dashboard-table tr.odd { background: #fff; }
+        .dashboard-table tr:hover { background: #e3f2fd; }
+        .dashboard-table td { vertical-align: middle; }
+        .dashboard-table button.btn { margin: 2px 2px 2px 0; min-width: 60px; font-size: 13px; }
+        .dashboard-table button.btn-stop { background: linear-gradient(135deg, #ffc107, #ff9800); color: #333; }
+        .dashboard-table button.btn-delete { background: linear-gradient(135deg, #dc3545, #b71c1c); color: #fff; }
+        @media (max-width: 900px) {
+            .dashboard-table th, .dashboard-table td { padding: 8px 4px; font-size: 13px; }
+            .dashboard-table button.btn { font-size: 12px; min-width: 48px; }
+        }
+        @media (max-width: 600px) {
+            .dashboard-table th, .dashboard-table td { padding: 6px 2px; font-size: 11px; }
+            .dashboard-table button.btn { font-size: 11px; min-width: 40px; }
+        }
+        `;
+        document.head.appendChild(style);
+
+        // --- Auto-Update Toggle ---
+        async function togglePolling(name, enabled) {
+            try {
+                await fetch(`/api/projects/${encodeURIComponent(name)}/polling`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-agent-password': agentPassword },
+                    body: JSON.stringify({ enabled })
+                });
+            } catch (e) {}
+        }
+        // --- Real-Time Polling ---
+        setInterval(loadDashboardProjects, 7000);
+        // --- Spinner CSS ---
+        const spinnerStyle = document.createElement('style');
+        spinnerStyle.innerHTML = `.spinner { display:inline-block; width:16px; height:16px; border:2px solid #ffc107; border-top:2px solid #fff; border-radius:50%; animation: spin 1s linear infinite; vertical-align:middle; margin-right:4px; } @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} } .switch { position: relative; display: inline-block; width: 38px; height: 22px; } .switch input { opacity: 0; width: 0; height: 0; } .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; transition: .4s; border-radius: 22px; } .slider:before { position: absolute; content: ''; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; transition: .4s; border-radius: 50%; } input:checked + .slider { background: #28a745; } input:checked + .slider:before { transform: translateX(16px); }`;
+        document.head.appendChild(spinnerStyle);
+
+        // --- Log Modal ---
+        let logModalProject = null;
+        function openLogModal(name) {
+            logModalProject = name;
+            showLogModal();
+            loadProjectLog();
+        }
+        function showLogModal() {
+            if (!document.getElementById('logModal')) {
+                const modal = document.createElement('div');
+                modal.id = 'logModal';
+                modal.className = 'modal';
+                modal.style = 'display:flex; position:fixed; z-index:4000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.4); align-items:center; justify-content:center;';
+                modal.innerHTML = `<div class='modal-content' style='background:#fff; padding:24px; border-radius:12px; width:95%; max-width:900px; box-shadow:0 8px 32px rgba(0,0,0,0.18); position:relative;'>
+                    <h3 style='margin-top:0;'>Project Log: <span id='logModalProjectName'></span></h3>
+                    <div style='margin-bottom:10px;'>
+                        <input id='logModalSearch' class='form-control' style='width:200px; display:inline-block;' placeholder='Search...'>
+                        <button class='btn' onclick='loadProjectLog()'>Search</button>
+                        <button class='btn' onclick='downloadProjectLog()'>Download</button>
+                        <button class='btn' onclick='closeLogModal()' style='float:right;'>Close</button>
+                    </div>
+                    <div id='logModalBox' style='background:#f8f9fa; border:1px solid #e9ecef; border-radius:8px; max-height:400px; overflow:auto; font-family:monospace; font-size:13px; padding:16px;'></div>
+                </div>`;
+                document.body.appendChild(modal);
+                document.getElementById('logModalSearch').addEventListener('keydown', function(e) { if (e.key === 'Enter') loadProjectLog(); });
+            }
+            document.getElementById('logModal').style.display = 'flex';
+            document.getElementById('logModalProjectName').textContent = logModalProject;
+        }
+        function closeLogModal() {
+            document.getElementById('logModal').style.display = 'none';
+        }
+        async function loadProjectLog() {
+            if (!logModalProject) return;
+            const search = document.getElementById('logModalSearch').value.trim();
+            let url = `/api/projects/${encodeURIComponent(logModalProject)}/log?lines=200`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+            const box = document.getElementById('logModalBox');
+            box.innerHTML = 'Loading...';
+            try {
+                const res = await fetch(url, { headers: { 'x-agent-password': agentPassword } });
+                const data = await res.json();
+                if (data.success) {
+                    box.innerHTML = `<pre style='white-space:pre-wrap;'>${(data.logs || []).join('\n')}</pre>`;
+                } else {
+                    box.innerHTML = `<span style='color:#dc3545;'>${data.error || 'Could not load log.'}</span>`;
+                }
+            } catch (e) {
+                box.innerHTML = `<span style='color:#dc3545;'>${e.message}</span>`;
+            }
+        }
+        function downloadProjectLog() {
+            if (!logModalProject) return;
+            window.open(`/api/projects/${encodeURIComponent(logModalProject)}/log/download?password=${encodeURIComponent(agentPassword)}`);
+        }
+        // --- Enhanced Delete Confirmation ---
+        function confirmDeleteProject(name) {
+            showStylishAlert('Delete Project', `Are you sure you want to <b>delete</b> <b style='color:#dc3545;'>${name}</b>? This will <b>delete the project folder and log file</b> from disk. This cannot be undone.`, function() {
+                deleteProject(name);
+            });
+        }
     </script>
 </body>
 </html>
