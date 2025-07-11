@@ -469,12 +469,18 @@
                     <label for="projectName">Project Name:</label>
                     <input type="text" id="projectName" class="form-control" placeholder="Enter project name">
                 </div>
-                
                 <div class="form-group">
                     <label for="gitRepo">Git Repository URL:</label>
                     <input type="url" id="gitRepo" class="form-control" placeholder="git@github.com:username/repo.git">
                 </div>
-                
+                <div class="form-group">
+                    <label for="deployPath">Deploy Path:</label>
+                    <input type="text" id="deployPath" class="form-control" placeholder="/home/pi/projects/myproject">
+                </div>
+                <div class="form-group">
+                    <label for="branch">Branch (optional, default: main):</label>
+                    <input type="text" id="branch" class="form-control" placeholder="main">
+                </div>
                 <button class="btn" onclick="deployProject()">Deploy Project</button>
             </div>
         </div>
@@ -748,29 +754,46 @@
         async function deployProject() {
             const projectName = document.getElementById('projectName').value.trim();
             const gitRepo = document.getElementById('gitRepo').value.trim();
-            
-            if (!projectName || !gitRepo) {
-                alert('Please fill in both project name and Git repository URL.');
+            // Add deploy path and branch fields
+            let deployPath = document.getElementById('deployPath') ? document.getElementById('deployPath').value.trim() : '';
+            let branch = document.getElementById('branch') ? document.getElementById('branch').value.trim() : 'main';
+            if (!projectName || !gitRepo || !deployPath) {
+                alert('Please fill in project name, Git repository URL, and deploy path.');
                 return;
             }
-            
             try {
-                const res = await fetch('/api/projects/deploy', {
+                // First, migrate/add the project
+                const migrateRes = await fetch('/api/migrate', {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
-                        'x-agent-password': agentPassword 
+                        'x-agent-password': agentPassword
                     },
-                    body: JSON.stringify({ projectName, gitRepo })
+                    body: JSON.stringify({
+                        deployPath: deployPath,
+                        name: projectName,
+                        repo: gitRepo,
+                        branch: branch
+                    })
                 });
-                
-                const data = await res.json();
-                
-                if (data.success) {
+                const migrateData = await migrateRes.json();
+                if (!migrateData.success) {
+                    alert('Migration failed: ' + (migrateData.error || 'Unknown error'));
+                    return;
+                }
+                // Then, trigger deployment
+                const deployRes = await fetch(`/api/deploy/${encodeURIComponent(projectName)}`, {
+                    method: 'POST',
+                    headers: {
+                        'x-agent-password': agentPassword
+                    }
+                });
+                const deployData = await deployRes.json();
+                if (deployData.success) {
                     alert('Project deployment started successfully!');
-                    loadProjectListForLogs(); // Refresh project list
+                    loadProjectListForLogs();
                 } else {
-                    alert('Deployment failed: ' + (data.error || 'Unknown error'));
+                    alert('Deployment failed: ' + (deployData.error || 'Unknown error'));
                 }
             } catch (e) {
                 alert('Error deploying project: ' + e.message);
