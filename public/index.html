@@ -403,21 +403,8 @@
         <div class="tab-content" id="dashboard" style="display: block;">
             <div class="tab-section">
                 <h2>Project Dashboard</h2>
-                <p>Welcome to your SSH Key Management Dashboard. Get started by generating an SSH key in the Authentication tab.</p>
-                
-                <div class="next-steps">
-                    <h3>Quick Start Guide</h3>
-                    <ol>
-                        <li><strong>Generate SSH Key:</strong> Go to Authentication tab and click "Generate SSH Key"</li>
-                        <li><strong>Copy Public Key:</strong> Copy your public key to your Git provider</li>
-                        <li><strong>Test Connection:</strong> Verify SSH connectivity</li>
-                        <li><strong>Deploy Projects:</strong> Use Migration tab to deploy your applications</li>
-                    </ol>
-                    
-                    <div class="button-group">
-                        <button class="btn" onclick="switchTab('auth')">Start with Authentication</button>
-                        <button class="btn" onclick="switchTab('migration')">Go to Migration</button>
-                    </div>
+                <div id="dashboardProjects">
+                    <p>Loading projects...</p>
                 </div>
             </div>
         </div>
@@ -567,6 +554,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeTabs();
             loadProjectListForLogs();
+            loadDashboardProjects();
         });
 
         // Tab management
@@ -594,6 +582,7 @@
                 updateTabIndicator();
                 if (tab === 'logs') loadProjectListForLogs();
                 if (tab === 'help') loadReadme();
+                if (tab === 'dashboard') loadDashboardProjects();
             }
         }
 
@@ -897,6 +886,58 @@
                     '<h3>Documentation Not Available</h3>' +
                     '<p>Could not load the README documentation. Please check the server configuration.</p>' +
                     '</div>';
+            }
+        }
+
+        // --- Dashboard Functions ---
+        async function loadDashboardProjects() {
+            const dashboard = document.getElementById('dashboardProjects');
+            dashboard.innerHTML = '<p>Loading projects...</p>';
+            try {
+                const res = await fetch('/api/projects', { headers: { 'x-agent-password': agentPassword } });
+                const projects = await res.json();
+                if (!projects || Object.keys(projects).length === 0) {
+                    dashboard.innerHTML = '<p>No projects found. Use the Migration tab to add one.</p>';
+                    return;
+                }
+                let html = `<table style='width:100%;border-collapse:collapse;margin-top:20px;'>` +
+                    `<tr style='background:#f8f9fa;'><th style='padding:8px;border:1px solid #e9ecef;'>Name</th><th style='padding:8px;border:1px solid #e9ecef;'>Status</th><th style='padding:8px;border:1px solid #e9ecef;'>Last Deployment</th><th style='padding:8px;border:1px solid #e9ecef;'>Last Commit</th><th style='padding:8px;border:1px solid #e9ecef;'>Actions</th></tr>`;
+                for (const [name, project] of Object.entries(projects)) {
+                    let statusColor = '#6c757d';
+                    if (project.status === 'ready') statusColor = '#28a745';
+                    else if (project.status === 'deploying') statusColor = '#ffc107';
+                    else if (project.status === 'error') statusColor = '#dc3545';
+                    html += `<tr>` +
+                        `<td style='padding:8px;border:1px solid #e9ecef;'>${name}</td>` +
+                        `<td style='padding:8px;border:1px solid #e9ecef;'><span style='display:inline-block;width:12px;height:12px;border-radius:50%;background:${statusColor};margin-right:8px;'></span>${project.status || 'unknown'}</td>` +
+                        `<td style='padding:8px;border:1px solid #e9ecef;'>${project.lastDeployment || '-'}</td>` +
+                        `<td style='padding:8px;border:1px solid #e9ecef;'>${project.lastCommit || '-'}</td>` +
+                        `<td style='padding:8px;border:1px solid #e9ecef;'><button class='btn' onclick='deployProjectFromDashboard("${name}")'>Deploy</button></td>` +
+                        `</tr>`;
+                }
+                html += `</table>`;
+                dashboard.innerHTML = html;
+            } catch (e) {
+                dashboard.innerHTML = `<p style='color:#dc3545;'>Error loading projects: ${e.message}</p>`;
+            }
+        }
+        async function deployProjectFromDashboard(name) {
+            if (!name) return;
+            if (!confirm(`Deploy project '${name}' now?`)) return;
+            try {
+                const res = await fetch(`/api/deploy/${encodeURIComponent(name)}`, {
+                    method: 'POST',
+                    headers: { 'x-agent-password': agentPassword }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Deployment started!');
+                } else {
+                    alert('Deployment failed: ' + (data.error || 'Unknown error'));
+                }
+                loadDashboardProjects();
+            } catch (e) {
+                alert('Error deploying project: ' + e.message);
             }
         }
 

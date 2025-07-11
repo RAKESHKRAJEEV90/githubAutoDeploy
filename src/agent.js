@@ -18,7 +18,7 @@ class DeploymentAgent {
     constructor() {
         this.app = express();
         this.port = process.env.PORT || 3004;
-        this.configPath = path.join(__dirname, 'config');
+        this.configPath = path.join(__dirname, '../config');
         this.projectsPath = path.join(this.configPath, 'projects.json');
         this.settingsPath = path.join(this.configPath, 'settings.json');
         this.logsPath = path.join(__dirname, 'logs');
