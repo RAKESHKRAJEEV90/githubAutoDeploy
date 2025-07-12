@@ -1,25 +1,69 @@
-# Universal Git Auto-Deployment Agent for Raspberry Pi
+# 🚀 Universal Git Auto-Deployment Agent
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-14+-green.svg)](https://nodejs.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com/)
+[![Platform](https://img.shields.io/badge/Platform-Raspberry%20Pi%20%7C%20Linux-orange.svg)](https://www.raspberrypi.org/)
 
 A universal, production-ready auto-deployment solution for Raspberry Pi and Linux servers. Supports Node.js, Python, Go, static sites, and more. Features multi-project management, webhooks, polling, systemd integration, and a modern web interface.
 
----
+## ✨ Features
 
-## 🚀 Features
-- **Universal**: Works with any project structure (Node.js, Python, Go, static, etc.)
-- **Multi-project**: Manage multiple apps with custom deploy scripts
-- **Triggers**: Webhook (real-time), polling (backup), manual
-- **Service management**: systemd integration (native only)
-- **Web interface**: Monitor, trigger, and view logs
-- **Secure**: Webhook signature verification, SSH keys, password-protected API
-- **Easy migration**: Add existing projects with a script or via the web UI
+- **🔄 Universal**: Works with any project structure (Node.js, Python, Go, static, etc.)
+- **📦 Multi-project**: Manage multiple apps with custom deploy scripts
+- **⚡ Triggers**: Webhook (real-time), polling (backup), manual
+- **🔧 Service management**: PM2 integration with auto-restart
+- **🌐 Web interface**: Modern dashboard with real-time monitoring
+- **🔒 Secure**: Webhook signature verification, SSH keys, password-protected API
+- **📱 Responsive**: Beautiful, mobile-friendly web interface
+- **🐳 Docker Ready**: Full Docker support with persistent data
+- **📊 Logs**: Advanced log viewing with search and download
+- **🔄 Auto-update**: Per-project polling toggle for automatic updates
 
----
+## 🚀 Quick Start
+
+### Option 1: Docker (Recommended)
+```bash
+# Clone the repository
+git clone https://github.com/your-username/git-auto-deploy-agent.git
+cd git-auto-deploy-agent
+
+# Start with Docker
+docker-compose up --build -d
+
+# Access the web interface
+open http://localhost:3004
+```
+
+### Option 2: Native Installation
+```bash
+# Clone and setup
+git clone https://github.com/your-username/git-auto-deploy-agent.git
+cd git-auto-deploy-agent
+
+# Install dependencies
+npm install
+
+# Run installation script (Linux/Pi only)
+sudo chmod +x scripts/*.sh
+sudo ./scripts/install.sh
+
+# Start the agent
+npm start
+```
+
+## 📋 Prerequisites
+
+- **Node.js 14+** or **Docker**
+- **Git** for repository access
+- **SSH key** for Git authentication
+- **Raspberry Pi** or **Linux server** (for native installation)
 
 ## 🛠️ Installation & Setup
 
 ### 1. Clone and Enter Directory
 ```sh
-cd 'node js'
+cd git-auto-deploy-agent
 ```
 
 ### 2. Install Node.js Dependencies (Native Only)
@@ -59,8 +103,6 @@ npm start
 node src/agent.js
 ```
 
----
-
 ## 🐳 Docker Usage (Recommended for Most Users)
 
 - **You do NOT need to run `install.sh` in Docker.**
@@ -96,8 +138,6 @@ docker-compose down
 > - The agent will run on port **3004** (as set in your Dockerfile and compose file).
 > - Make sure port 3004 is open on your firewall if accessing remotely.
 
----
-
 ## ⚡ Native vs Docker: Which Should I Use?
 
 | Feature                | Native (install.sh) | Docker (Recommended) |
@@ -114,133 +154,245 @@ docker-compose down
 - **Use Docker** for easiest setup, isolation, and portability.
 - **Use native install** only if you need systemd/nginx on the host.
 
----
-
 ## 🌐 Web Interface
+
 - Open [http://localhost:3004](http://localhost:3004) (or your Pi's IP) in your browser.
 - **Password required:** Enter the agent password (default: `changeme` or as set in your config/env).
-- Use the dashboard to:
-  - View system status and logs
-  - Add/remove projects
-  - Trigger manual deployments
-- Use the **Authentication** tab for SSH key management.
-- Use the **Migration** tab to migrate existing projects.
 
----
+### Dashboard Features:
+- **📊 Real-time monitoring** of all projects
+- **🔄 Auto-refresh** every 7 seconds
+- **📝 Advanced log viewing** with search and download
+- **⚙️ Per-project settings** (auto-update toggle)
+- **🚀 One-click deployments**
+- **🗑️ Project management** (stop, delete, edit)
+
+### Authentication Tab:
+- **🔑 SSH key generation** and management
+- **🔗 Git provider testing**
+- **📋 Public key display** for easy copying
+
+### Migration Tab:
+- **📦 Add existing projects** with type selection
+- **🎯 Project type templates** (Node.js, Python, Go, Static)
+- **📁 Automatic deploy script** generation
 
 ## ➕ Adding Projects
 
 ### Using the Web Interface
-- Click **Add Project** and fill in the details (name, repo URL, branch, deploy path, etc.)
+1. Go to the **Migration** tab
+2. Fill in project details:
+   - **Name**: Your project name
+   - **Git Repository**: SSH or HTTPS URL
+   - **Deploy Path**: Where to deploy (e.g., `/home/pi/projects/myapp`)
+   - **Branch**: Git branch (default: `main`)
+   - **Project Type**: Select appropriate template (Node.js, Python, Go, Static, Custom)
+3. Click **Migrate Project**
+4. Click **Deploy** to start the first deployment
 
 ### Using the CLI
 ```sh
 ./scripts/add-project.sh myapp git@github.com:user/myapp.git main /opt/myapp
 ```
 
----
-
 ## 🔗 Webhook Setup
-- Set your GitHub/GitLab webhook URL to:
-  `http://<your-pi-ip>:3004/webhook/<project-name>`
-- Use the secret from `config/settings.json` for signature verification.
 
----
+### GitHub Webhook Configuration:
+1. Go to your repository settings
+2. Navigate to **Webhooks** → **Add webhook**
+3. Set **Payload URL**: `http://<your-pi-ip>:3004/webhook/<project-name>`
+4. Set **Content type**: `application/json`
+5. Set **Secret**: Use the value from `config/settings.json`
+6. Select events: **Just the push event**
+7. Click **Add webhook**
+
+### GitLab Webhook Configuration:
+1. Go to your project settings
+2. Navigate to **Webhooks**
+3. Set **URL**: `http://<your-pi-ip>:3004/webhook/<project-name>`
+4. Set **Secret Token**: Use the value from `config/settings.json`
+5. Select **Push events**
+6. Click **Add webhook**
 
 ## 📝 Customizing Deploy Scripts
-- For each project, copy a template from `templates/` to your project as `deploy.sh` and customize as needed.
-- Example: `cp templates/deploy-nodejs.sh /opt/myapp/deploy.sh`
 
----
+The agent includes templates for different project types:
+
+### Node.js Template (`templates/deploy-nodejs.sh`):
+- Installs dependencies with `npm install`
+- Runs tests if available
+- Builds project if build script exists
+- Manages app with PM2
+- Auto-restarts after deployment
+
+### Python Template (`templates/deploy-python.sh`):
+- Activates virtual environment if present
+- Installs dependencies with `pip3 install -r requirements.txt`
+- Manages app with PM2 using Python interpreter
+- Supports Django migrations and static files
+
+### Go Template (`templates/deploy-go.sh`):
+- Downloads dependencies with `go mod download`
+- Runs tests with `go test ./...`
+- Builds application with `go build -o app`
+- Manages app with PM2
+
+### Static Template (`templates/deploy-static.sh`):
+- Basic template for static sites
+- Can be customized for build tools (Hugo, Jekyll, etc.)
 
 ## 🛡️ Security
-- Webhook secrets are required for all incoming webhooks
-- All API and sensitive routes are password-protected (header: `x-agent-password`)
-- Only the `deploy` user can run deployments (if using systemd)
-- **Change the default password** before exposing the agent to any network!
 
----
+- **🔐 Password Protection**: All API routes require authentication
+- **🔑 SSH Key Management**: Secure Git authentication
+- **🔒 Webhook Verification**: Signature verification for all webhooks
+- **👤 User Isolation**: Separate user for deployments (native install)
+- **📝 Audit Logs**: Complete deployment history and logs
+
+### Security Best Practices:
+1. **Change the default password** before exposing to any network
+2. **Use SSH keys** instead of passwords for Git access
+3. **Keep webhook secrets** secure and unique per project
+4. **Regular updates** of the agent and dependencies
+5. **Firewall configuration** to limit access to necessary ports
 
 ## 🧰 Troubleshooting
-- **Service not starting?**
-  - Check logs: `journalctl -u git-deploy-agent -f`
-- **Webhook not triggering?**
-  - Check secret, payload, and logs
-- **SSH issues?**
-  - Run `ssh -T git@github.com` and check keys
-  - Use the **Test SSH Connection** button in the web UI for feedback
-- **Web UI not loading?**
-  - Ensure `public/index.html` exists and paths are correct in `src/agent.js`
-- **SSH Key Management errors?**
-  - Make sure you are running the agent on Linux/Pi, not Windows
-  - The Node.js process must have permission to access `~/.ssh` and run `ssh-keygen`/`ssh`
-  - If you see "No SSH public key found", generate a key first
-  - If you see permission errors, check file permissions and user
 
----
+### Common Issues:
 
-## 📚 Documentation & Help
-- All configuration is in `config/`
-- Logs are in `logs/`
-- Deploy templates are in `templates/`
-- Systemd service file is in `systemd/`
+**Service not starting?**
+```bash
+# Check systemd logs
+journalctl -u git-deploy-agent -f
 
----
+# Check Docker logs
+docker-compose logs -f
+```
 
-## 🤝 Contributing
-PRs and suggestions welcome!
+**Webhook not triggering?**
+- Verify webhook URL and secret
+- Check agent logs for webhook errors
+- Ensure webhook is configured for push events only
 
-universal-git-deployer/
+**SSH issues?**
+```bash
+# Test SSH connection
+ssh -T git@github.com
+
+# Use web UI to test connection
+# Check SSH key permissions
+chmod 600 ~/.ssh/id_rsa
+chmod 644 ~/.ssh/id_rsa.pub
+```
+
+**Web UI not loading?**
+- Verify `public/index.html` exists
+- Check file permissions
+- Ensure port 3004 is accessible
+
+**PM2 issues?**
+```bash
+# Check PM2 status
+pm2 list
+
+# Restart PM2 daemon
+pm2 kill
+pm2 start
+```
+
+## 📚 Configuration
+
+The application automatically generates configuration files when it first runs:
+
+### Settings (`config/settings.json`):
+Generated automatically with default values:
+```json
+{
+  "pollingInterval": 5,
+  "webhookSecret": "auto-generated-secret",
+  "maxConcurrentDeployments": 3,
+  "logRetentionDays": 30
+}
+```
+
+### Projects (`config/projects.json`):
+Generated automatically when projects are added via the web interface or migration script:
+```json
+{
+  "my-project": {
+    "name": "my-project",
+    "repoUrl": "git@github.com:user/repo.git",
+    "branch": "main",
+    "deployPath": "/home/pi/projects/my-project",
+    "type": "nodejs",
+    "pollingEnabled": true,
+    "status": "ready",
+    "lastCommit": null,
+    "lastDeployment": null,
+    "deploymentHistory": []
+  }
+}
+```
+
+> **Note:** These files are automatically created and managed by the application. You don't need to create them manually.
+
+## 📁 Project Structure
+
+```
+git-auto-deploy-agent/
 ├── src/
 │   ├── agent.js                 # Main deployment agent
-│   ├── webhook-server.js        # Webhook receiver server
-│   ├── git-manager.js          # Git operations handler
-│   ├── service-manager.js      # SystemD service management
-│   ├── project-manager.js      # Project configuration management
-│   ├── logger.js               # Logging utility
-│   ├── auth-manager.js         # Authentication handling
-│   └── web-interface.js        # Web dashboard
+│   └── logs/                   # Log files (auto-created)
 ├── public/
-│   ├── index.html              # Web dashboard UI
-│   ├── style.css               # Dashboard styles
-│   └── script.js               # Dashboard JavaScript
-├── config/
-│   ├── projects.json           # Project configurations
-│   ├── auth.json               # Authentication credentials
-│   └── agent-config.json       # Agent settings
+│   ├── index.html              # Web interface
+│   └── assets/                 # Static assets (logo, og image)
 ├── templates/
-│   ├── deploy-python.sh        # Python deployment template
-│   ├── deploy-nodejs.sh        # Node.js deployment template
-│   ├── deploy-static.sh        # Static site deployment template
-│   ├── deploy-go.sh            # Go deployment template
-│   └── systemd-service.template # SystemD service template
+│   ├── deploy-nodejs.sh        # Node.js template
+│   ├── deploy-python.sh        # Python template
+│   ├── deploy-go.sh           # Go template
+│   └── deploy-static.sh       # Static site template
 ├── scripts/
-│   ├── install.sh              # Main installation script
-│   ├── setup-auth.sh           # Authentication setup
-│   ├── add-project.sh          # Add new project script
-│   ├── migrate-project.sh      # Migrate existing project
-│   └── uninstall.sh            # Uninstall script
-├── logs/
-│   ├── agent.log               # Main agent logs
-│   ├── webhook.log             # Webhook logs
-│   └── projects/               # Individual project logs
-│       ├── project1.log
-│       └── project2.log
-├── projects/
-│   ├── project1/               # Example project directory
-│   │   ├── deploy.sh           # Custom deployment script
-│   │   └── .deploy-config      # Project-specific config
-│   └── project2/
-│       ├── deploy.sh
-│       └── .deploy-config
-├── package.json                # Node.js dependencies
-├── package-lock.json           # Dependency lock file
-├── README.md                   # Documentation
-├── .env.example                # Environment variables template
-├── .gitignore                  # Git ignore file
-└── systemd/
-    ├── git-deployer.service    # Main agent service
-    └── git-webhook.service     # Webhook service
+│   ├── install.sh             # Installation script
+│   ├── migrate.js             # Project migration
+│   └── setup-auth.sh         # SSH setup
+├── config/                    # Auto-generated config files (root level)
+├── projects/                  # Deployed projects (auto-created)
+├── docker-compose.yaml       # Docker configuration
+├── Dockerfile               # Docker image
+├── package.json            # Node.js dependencies
+├── LICENSE                 # MIT License
+├── CONTRIBUTING.md        # Contributing guidelines
+└── README.md             # This documentation
+```
+
+> **Note:** The `config/` directory and its files (`settings.json`, `projects.json`) are automatically created when the application first runs. You don't need to create them manually.
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Setup:
+1. Fork the repository
+2. Clone your fork
+3. Install dependencies: `npm install`
+4. Create a feature branch
+5. Make your changes
+6. Test thoroughly
+7. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built for the Raspberry Pi community
+- Inspired by the need for simple, reliable deployment solutions
+- Thanks to all contributors and users
+
+---
+
+**Made with ❤️ for the Raspberry Pi community**
 
     
 
