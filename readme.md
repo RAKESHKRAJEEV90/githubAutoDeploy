@@ -25,7 +25,7 @@ A universal, production-ready auto-deployment solution for Raspberry Pi and Linu
 ### Option 1: Docker (Recommended)
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/git-auto-deploy-agent.git
+git clone https://github.com/RAKESHKRAJEEV90/githubAutoDeploy.git
 cd git-auto-deploy-agent
 
 # Start with Docker
@@ -38,7 +38,7 @@ open http://localhost:3004
 ### Option 2: Native Installation
 ```bash
 # Clone and setup
-git clone https://github.com/your-username/git-auto-deploy-agent.git
+git clone https://github.com/RAKESHKRAJEEV90/githubAutoDeploy.git
 cd git-auto-deploy-agent
 
 # Install dependencies
