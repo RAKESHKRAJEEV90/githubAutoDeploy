@@ -1028,6 +1028,83 @@
       </div>
     </div>
 
+    <!-- PM2 Logs Modal -->
+    <div id="pm2LogsModal" class="modal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100vw; height:100vh; backdrop-filter: blur(8px); background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+      <div class="modal-content" style="background: var(--surface-primary); padding: 32px; border-radius: var(--radius-lg); width: 90%; max-width: 900px; box-shadow: var(--shadow-xl); position: relative; border: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; margin-bottom: 24px;">
+          <div style="width: 48px; height: 48px; background: var(--accent-gradient); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 16px;">📊</div>
+          <h3 id="pm2LogsTitle" style="margin: 0; color: var(--text-primary); font-weight: 600;">PM2 Logs</h3>
+        </div>
+        <div style="margin-bottom: 16px; display: flex; gap: 12px; align-items: center;">
+          <button class="btn" onclick="refreshPm2Logs()">🔄 Refresh</button>
+          <button class="btn" onclick="downloadPm2Logs()">📥 Download</button>
+          <select id="pm2LogsLines" style="padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <option value="50">Last 50 lines</option>
+            <option value="100" selected>Last 100 lines</option>
+            <option value="200">Last 200 lines</option>
+            <option value="500">Last 500 lines</option>
+          </select>
+        </div>
+        <div id="pm2LogsContent" style="width: 100%; height: 400px; font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace; font-size: 13px; border-radius: var(--radius-md); border: 2px solid var(--border-color); padding: 20px; background: var(--surface-secondary); color: var(--text-primary); line-height: 1.4; overflow-y: auto; white-space: pre-wrap;"></div>
+        <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn btn-stop" onclick="closePm2LogsModal()">
+            ❌ Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Manager Modal -->
+    <div id="fileManagerModal" class="modal" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100vw; height:100vh; backdrop-filter: blur(8px); background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+      <div class="modal-content" style="background: var(--surface-primary); padding: 32px; border-radius: var(--radius-lg); width: 90%; max-width: 1000px; box-shadow: var(--shadow-xl); position: relative; border: 1px solid var(--border-color);">
+        <div style="display: flex; align-items: center; margin-bottom: 24px;">
+          <div style="width: 48px; height: 48px; background: var(--success-gradient); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 16px;">📁</div>
+          <h3 id="fileManagerTitle" style="margin: 0; color: var(--text-primary); font-weight: 600;">File Manager</h3>
+        </div>
+        
+        <!-- File Upload Section -->
+        <div style="margin-bottom: 24px; padding: 20px; background: var(--surface-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+          <h4 style="margin: 0 0 16px 0; color: var(--text-primary);">Upload Files</h4>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <input type="file" id="fileUpload" style="flex: 1; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            <button class="btn" onclick="uploadFile()">📤 Upload</button>
+          </div>
+          <div id="uploadStatus" style="margin-top: 12px; display: none;"></div>
+        </div>
+
+        <!-- File List Section -->
+        <div style="display: flex; gap: 24px;">
+          <div style="flex: 1;">
+            <h4 style="margin: 0 0 16px 0; color: var(--text-primary);">Project Files</h4>
+            <div id="fileList" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--surface-secondary);">
+              <div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading files...</div>
+            </div>
+          </div>
+          
+          <div style="flex: 1;">
+            <h4 style="margin: 0 0 16px 0; color: var(--text-primary);">File Editor</h4>
+            <div id="fileEditor" style="display: none;">
+              <div style="margin-bottom: 12px;">
+                <strong id="currentFileName">filename</strong>
+                <button class="btn" onclick="saveFile()" style="margin-left: 12px;">💾 Save</button>
+                <button class="btn btn-stop" onclick="closeFileEditor()" style="margin-left: 8px;">❌ Close</button>
+              </div>
+              <textarea id="fileContent" style="width: 100%; height: 250px; font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'Roboto Mono', monospace; font-size: 13px; border-radius: var(--radius-md); border: 2px solid var(--border-color); padding: 16px; background: var(--surface-secondary); color: var(--text-primary); line-height: 1.4; resize: vertical;"></textarea>
+            </div>
+            <div id="fileEditorPlaceholder" style="padding: 20px; text-align: center; color: var(--text-muted); border: 2px dashed var(--border-color); border-radius: var(--radius-md);">
+              Select a file to edit
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn btn-stop" onclick="closeFileManagerModal()">
+            ❌ Close
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Stylish Alert Modal -->
     <div id="stylishAlertModal" class="modal" style="display:none; position:fixed; z-index:3000; left:0; top:0; width:100vw; height:100vh; backdrop-filter: blur(8px); background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
       <div class="modal-content" style="background: var(--surface-primary); padding: 40px 32px; border-radius: var(--radius-lg); width: 90%; max-width: 450px; box-shadow: var(--shadow-xl); position: relative; text-align: center; border: 1px solid var(--border-color);">
@@ -1434,7 +1511,7 @@
                         `<td><label class='switch'><input type='checkbox' onchange='togglePolling("${name}", this.checked)' ${project.pollingEnabled !== false ? 'checked' : ''}><span class='slider'></span></label></td>` +
                         `<td>${project.lastDeployment || '-'}</td>` +
                         `<td>${project.lastCommit || '-'}</td>` +
-                        `<td style='min-width:260px;'><button class='btn' onclick='deployProjectFromDashboard("${name}")'>Deploy</button> <button class='btn' onclick='openLogModal("${name}")'>View Log</button> <button class='btn' onclick='viewDeployScript("${name}")'>View/Edit deploy.sh</button> <button class='btn btn-stop' onclick='confirmStopProject("${name}")'>Stop</button> <button class='btn btn-delete' onclick='confirmDeleteProject("${name}")'>Delete</button></td>` +
+                        `<td style='min-width:320px;'><button class='btn' onclick='deployProjectFromDashboard("${name}")'>Deploy</button> <button class='btn' onclick='openLogModal("${name}")'>View Log</button> <button class='btn' onclick='viewPm2Logs("${name}")'>PM2 Logs</button> <button class='btn' onclick='viewDeployScript("${name}")'>View/Edit deploy.sh</button> <button class='btn' onclick='openFileManager("${name}")'>Files</button> <button class='btn btn-stop' onclick='confirmStopProject("${name}")'>Stop</button> <button class='btn btn-delete' onclick='confirmDeleteProject("${name}")'>Delete</button></td>` +
                         `</tr>`;
                     if (project.deploymentHistory && project.deploymentHistory.length > 0) {
                         html += `<tr><td colspan='7'><details><summary>Deployment History (last 3)</summary><ul style='margin:0;padding:0 0 0 20px;'>`;
@@ -1708,6 +1785,181 @@
             showStylishAlert('Delete Project', `Are you sure you want to <b>delete</b> <b style='color:#dc3545;'>${name}</b>? This will <b>delete the project folder and log file</b> from disk. This cannot be undone.`, function() {
                 deleteProject(name);
             });
+        }
+
+        // --- PM2 Logs Functions ---
+        let currentPm2Project = '';
+        async function viewPm2Logs(projectName) {
+            currentPm2Project = projectName;
+            document.getElementById('pm2LogsTitle').textContent = `PM2 Logs - ${projectName}`;
+            document.getElementById('pm2LogsModal').style.display = 'flex';
+            await loadPm2Logs();
+        }
+        function closePm2LogsModal() {
+            document.getElementById('pm2LogsModal').style.display = 'none';
+            currentPm2Project = '';
+        }
+        async function loadPm2Logs() {
+            if (!currentPm2Project) return;
+            const content = document.getElementById('pm2LogsContent');
+            const lines = document.getElementById('pm2LogsLines').value;
+            content.textContent = 'Loading PM2 logs...';
+            try {
+                const res = await fetch(`/api/projects/${encodeURIComponent(currentPm2Project)}/pm2-logs?lines=${lines}`, {
+                    headers: { 'x-agent-password': agentPassword }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    content.textContent = data.logs.join('\n');
+                } else {
+                    content.textContent = `Error: ${data.error || 'Could not load PM2 logs'}`;
+                }
+            } catch (e) {
+                content.textContent = `Error: ${e.message}`;
+            }
+        }
+        async function refreshPm2Logs() {
+            await loadPm2Logs();
+        }
+        function downloadPm2Logs() {
+            if (!currentPm2Project) return;
+            const content = document.getElementById('pm2LogsContent').textContent;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentPm2Project}-pm2-logs.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // --- File Manager Functions ---
+        let currentFileProject = '';
+        let currentFileName = '';
+        async function openFileManager(projectName) {
+            currentFileProject = projectName;
+            document.getElementById('fileManagerTitle').textContent = `File Manager - ${projectName}`;
+            document.getElementById('fileManagerModal').style.display = 'flex';
+            await loadFileList();
+        }
+        function closeFileManagerModal() {
+            document.getElementById('fileManagerModal').style.display = 'none';
+            currentFileProject = '';
+            currentFileName = '';
+        }
+        async function loadFileList() {
+            if (!currentFileProject) return;
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Loading files...</div>';
+            try {
+                const res = await fetch(`/api/projects/${encodeURIComponent(currentFileProject)}/files`, {
+                    headers: { 'x-agent-password': agentPassword }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    let html = '';
+                    data.files.forEach(file => {
+                        const size = file.isDirectory ? 'DIR' : formatFileSize(file.size);
+                        const icon = file.isDirectory ? '📁' : '📄';
+                        html += `<div style="padding: 8px 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="selectFile('${file.name}')">
+                            <span>${icon} ${file.name}</span>
+                            <span style="color: var(--text-muted); font-size: 12px;">${size}</span>
+                        </div>`;
+                    });
+                    fileList.innerHTML = html || '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No files found</div>';
+                } else {
+                    fileList.innerHTML = `<div style="padding: 20px; text-align: center; color: #dc3545;">Error: ${data.error}</div>`;
+                }
+            } catch (e) {
+                fileList.innerHTML = `<div style="padding: 20px; text-align: center; color: #dc3545;">Error: ${e.message}</div>`;
+            }
+        }
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        async function selectFile(filename) {
+            if (!currentFileProject) return;
+            currentFileName = filename;
+            document.getElementById('currentFileName').textContent = filename;
+            document.getElementById('fileEditor').style.display = 'block';
+            document.getElementById('fileEditorPlaceholder').style.display = 'none';
+            const textarea = document.getElementById('fileContent');
+            textarea.value = 'Loading file...';
+            try {
+                const res = await fetch(`/api/projects/${encodeURIComponent(currentFileProject)}/files/${encodeURIComponent(filename)}`, {
+                    headers: { 'x-agent-password': agentPassword }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    textarea.value = data.content;
+                } else {
+                    textarea.value = `Error: ${data.error || 'Could not load file'}`;
+                }
+            } catch (e) {
+                textarea.value = `Error: ${e.message}`;
+            }
+        }
+        function closeFileEditor() {
+            document.getElementById('fileEditor').style.display = 'none';
+            document.getElementById('fileEditorPlaceholder').style.display = 'block';
+            currentFileName = '';
+        }
+        async function saveFile() {
+            if (!currentFileProject || !currentFileName) return;
+            const content = document.getElementById('fileContent').value;
+            try {
+                const res = await fetch(`/api/projects/${encodeURIComponent(currentFileProject)}/files/${encodeURIComponent(currentFileName)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-agent-password': agentPassword
+                    },
+                    body: JSON.stringify({ content })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStylishAlert('Saved', `File ${currentFileName} saved successfully!`);
+                } else {
+                    showStylishAlert('Error', data.error || 'Could not save file');
+                }
+            } catch (e) {
+                showStylishAlert('Error', e.message);
+            }
+        }
+        async function uploadFile() {
+            if (!currentFileProject) return;
+            const fileInput = document.getElementById('fileUpload');
+            const file = fileInput.files[0];
+            if (!file) {
+                showStylishAlert('Error', 'Please select a file to upload');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            const status = document.getElementById('uploadStatus');
+            status.style.display = 'block';
+            status.innerHTML = '<div style="color: #007bff;">Uploading...</div>';
+            try {
+                const res = await fetch(`/api/projects/${encodeURIComponent(currentFileProject)}/upload`, {
+                    method: 'POST',
+                    headers: { 'x-agent-password': agentPassword },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    status.innerHTML = '<div style="color: #28a745;">✅ File uploaded successfully!</div>';
+                    fileInput.value = '';
+                    await loadFileList();
+                } else {
+                    status.innerHTML = `<div style="color: #dc3545;">❌ Error: ${data.error}</div>`;
+                }
+            } catch (e) {
+                status.innerHTML = `<div style="color: #dc3545;">❌ Error: ${e.message}</div>`;
+            }
         }
     </script>
 </body>

@@ -266,6 +266,137 @@ class DeploymentAgent {
                 res.status(404).send('Log not found');
             }
         });
+
+        // --- PM2 Logs Endpoint ---
+        this.app.get('/api/projects/:name/pm2-logs', async (req, res) => {
+            const { name } = req.params;
+            const { lines } = req.query;
+            try {
+                const { stdout, stderr } = await execAsync(`pm2 logs ${name} --lines ${lines || 100} --nostream`);
+                const pm2Logs = stdout || stderr || 'No PM2 logs available';
+                res.json({ success: true, logs: pm2Logs.split('\n') });
+            } catch (e) {
+                res.json({ success: false, logs: [], error: e.message });
+            }
+        });
+
+        // --- File Upload and Management ---
+        this.app.post('/api/projects/:name/upload', async (req, res) => {
+            const { name } = req.params;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+
+            try {
+                // Use multer for file uploads
+                const multer = require('multer');
+                const upload = multer({ 
+                    dest: '/tmp/',
+                    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+                });
+
+                upload.single('file')(req, res, async (err) => {
+                    if (err) {
+                        return res.status(400).json({ error: err.message });
+                    }
+
+                    if (!req.file) {
+                        return res.status(400).json({ error: 'No file uploaded' });
+                    }
+
+                    const { filename, originalname } = req.file;
+                    const destinationPath = path.join(project.deployPath, originalname);
+
+                    try {
+                        await fs.copyFile(req.file.path, destinationPath);
+                        await fs.unlink(req.file.path); // Clean up temp file
+                        res.json({ success: true, message: `File ${originalname} uploaded successfully` });
+                    } catch (copyError) {
+                        await fs.unlink(req.file.path); // Clean up temp file
+                        res.status(500).json({ error: copyError.message });
+                    }
+                });
+            } catch (e) {
+                res.status(500).json({ error: e.message });
+            }
+        });
+
+        // Get project files list
+        this.app.get('/api/projects/:name/files', async (req, res) => {
+            const { name } = req.params;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+
+            try {
+                const files = await fs.readdir(project.deployPath);
+                const fileList = [];
+                
+                for (const file of files) {
+                    try {
+                        const filePath = path.join(project.deployPath, file);
+                        const stats = await fs.stat(filePath);
+                        fileList.push({
+                            name: file,
+                            size: stats.size,
+                            isDirectory: stats.isDirectory(),
+                            modified: stats.mtime
+                        });
+                    } catch (e) {
+                        // Skip files we can't read
+                    }
+                }
+                
+                res.json({ success: true, files: fileList });
+            } catch (e) {
+                res.status(500).json({ error: e.message });
+            }
+        });
+
+        // Get file content
+        this.app.get('/api/projects/:name/files/:filename', async (req, res) => {
+            const { name, filename } = req.params;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+
+            try {
+                const filePath = path.join(project.deployPath, filename);
+                const content = await fs.readFile(filePath, 'utf8');
+                res.json({ success: true, content, filename });
+            } catch (e) {
+                res.status(404).json({ error: 'File not found' });
+            }
+        });
+
+        // Update file content
+        this.app.post('/api/projects/:name/files/:filename', async (req, res) => {
+            const { name, filename } = req.params;
+            const { content } = req.body;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+
+            try {
+                const filePath = path.join(project.deployPath, filename);
+                await fs.writeFile(filePath, content, 'utf8');
+                res.json({ success: true, message: `File ${filename} updated successfully` });
+            } catch (e) {
+                res.status(500).json({ error: e.message });
+            }
+        });
+
+        // Delete file
+        this.app.delete('/api/projects/:name/files/:filename', async (req, res) => {
+            const { name, filename } = req.params;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+
+            try {
+                const filePath = path.join(project.deployPath, filename);
+                await fs.unlink(filePath);
+                res.json({ success: true, message: `File ${filename} deleted successfully` });
+            } catch (e) {
+                res.status(500).json({ error: e.message });
+            }
+        });
+
         // --- Delete Project (with folder and log deletion) ---
         this.app.delete('/api/projects/:name', async (req, res) => {
             const { name } = req.params;
