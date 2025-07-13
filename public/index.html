@@ -877,7 +877,7 @@
         <div class="tab-content" id="migration">
             <div class="tab-section">
                 <h2>Project Migration</h2>
-                <p>Deploy and manage your projects with ease.</p>
+                <p>Add existing projects to the deployment agent or clone new projects.</p>
                 
                 <div class="form-group">
                     <label for="projectName">Project Name:</label>
@@ -905,7 +905,11 @@
                         <option value="custom">Custom</option>
                     </select>
                 </div>
-                <button class="btn" onclick="deployProject()">Deploy Project</button>
+                <button class="btn" id="migrateBtn" onclick="migrateProject()">
+                    <span id="migrateBtnText">🔄 Migrate Project</span>
+                    <span id="migrateSpinner" class="spinner" style="display:none;"></span>
+                </button>
+                <div id="migrationStatus" style="margin-top: 16px; display: none;"></div>
             </div>
         </div>
 
@@ -1335,16 +1339,30 @@
         }
 
         // Project Management Functions
-        async function deployProject() {
+        async function migrateProject() {
             const projectName = document.getElementById('projectName').value.trim();
             const gitRepo = document.getElementById('gitRepo').value.trim();
             let deployPath = document.getElementById('deployPath') ? document.getElementById('deployPath').value.trim() : '';
             let branch = document.getElementById('branch') ? document.getElementById('branch').value.trim() : 'main';
             let type = document.getElementById('projectType') ? document.getElementById('projectType').value : 'nodejs';
+            
             if (!projectName || !gitRepo || !deployPath) {
-                alert('Please fill in project name, Git repository URL, and deploy path.');
+                showStylishAlert('Missing Information', 'Please fill in project name, Git repository URL, and deploy path.');
                 return;
             }
+
+            // Show loading state
+            const migrateBtn = document.getElementById('migrateBtn');
+            const migrateBtnText = document.getElementById('migrateBtnText');
+            const migrateSpinner = document.getElementById('migrateSpinner');
+            const migrationStatus = document.getElementById('migrationStatus');
+            
+            migrateBtn.disabled = true;
+            migrateBtnText.textContent = '🔄 Migrating...';
+            migrateSpinner.style.display = 'inline-block';
+            migrationStatus.style.display = 'block';
+            migrationStatus.innerHTML = '<div style="color: #ffc107; padding: 12px; background: rgba(255, 193, 7, 0.1); border-radius: 8px; border-left: 4px solid #ffc107;">🔄 Migrating project...</div>';
+
             try {
                 const migrateRes = await fetch('/api/migrate', {
                     method: 'POST',
@@ -1360,36 +1378,49 @@
                         type: type
                     })
                 });
+                
                 const migrateData = await migrateRes.json();
+                
                 if (!migrateData.success) {
-                    showStylishAlert('Migration Failed', migrateData.error || 'Unknown error');
+                    migrationStatus.innerHTML = '<div style="color: #dc3545; padding: 12px; background: rgba(220, 53, 69, 0.1); border-radius: 8px; border-left: 4px solid #dc3545;">❌ Migration failed: ' + (migrateData.error || 'Unknown error') + '</div>';
                     document.getElementById('logProjectSelect').value = projectName;
                     loadAdvancedLog();
                     return;
                 }
-                const deployRes = await fetch(`/api/deploy/${encodeURIComponent(projectName)}`, {
-                    method: 'POST',
-                    headers: {
-                        'x-agent-password': agentPassword
-                    }
-                });
-                const deployData = await deployRes.json();
-                if (deployData.success) {
-                    showStylishAlert('Success', 'Project migration and deployment started!', function() {
+
+                // Get migration type from backend response
+                let successMessage = '';
+                if (migrateData.migrationType === 'migrated') {
+                    successMessage = '✅ Successfully migrated existing project!';
+                } else if (migrateData.migrationType === 'migrated_with_git') {
+                    successMessage = '✅ Successfully migrated existing project and initialized Git!';
+                } else {
+                    successMessage = '✅ Successfully cloned new project!';
+                }
+
+                migrationStatus.innerHTML = '<div style="color: #28a745; padding: 12px; background: rgba(40, 167, 69, 0.1); border-radius: 8px; border-left: 4px solid #28a745;">' + successMessage + '</div>';
+                
+                // Update project list and switch to dashboard
+                loadProjectListForLogs();
+                loadDashboardProjects();
+                
+                // Show success message and switch to dashboard after delay
+                setTimeout(() => {
+                    showStylishAlert('Migration Successful', successMessage, function() {
                         switchTab('dashboard');
                     });
-                    loadProjectListForLogs();
-                } else {
-                    showStylishAlert('Deployment Failed', deployData.error || 'Unknown error');
-                }
-                document.getElementById('logProjectSelect').value = projectName;
-                loadAdvancedLog();
-                loadDashboardProjects();
+                }, 1000);
+                
             } catch (e) {
-                showStylishAlert('Error', e.message);
+                migrationStatus.innerHTML = '<div style="color: #dc3545; padding: 12px; background: rgba(220, 53, 69, 0.1); border-radius: 8px; border-left: 4px solid #dc3545;">❌ Error: ' + e.message + '</div>';
                 document.getElementById('logProjectSelect').value = projectName;
                 loadAdvancedLog();
                 loadDashboardProjects();
+            } finally {
+                // Reset button state
+                migrateBtn.disabled = false;
+                migrateBtnText.textContent = '🔄 Migrate Project';
+                migrateSpinner.style.display = 'none';
             }
         }
 
@@ -1492,8 +1523,23 @@
                     dashboard.innerHTML = '<p>No projects found. Use the Migration tab to add one.</p>';
                     return;
                 }
+                
+                // Get PM2 status for all projects
+                const pm2Statuses = {};
+                for (const [name, project] of Object.entries(projects)) {
+                    try {
+                        const pm2Res = await fetch(`/api/projects/${encodeURIComponent(name)}/pm2-status`, { 
+                            headers: { 'x-agent-password': agentPassword } 
+                        });
+                        const pm2Data = await pm2Res.json();
+                        pm2Statuses[name] = pm2Data;
+                    } catch (e) {
+                        pm2Statuses[name] = { isRunning: false, status: 'unknown' };
+                    }
+                }
+                
                 let html = `<div style='overflow-x:auto;'><table class='dashboard-table'>` +
-                    `<tr><th>Name</th><th>Type</th><th>Status</th><th>Auto-Update</th><th>Last Deployment</th><th>Last Commit</th><th>Actions</th></tr>`;
+                    `<tr><th>Name</th><th>Type</th><th>Status</th><th>PM2 Status</th><th>Auto-Update</th><th>Last Deployment</th><th>Last Commit</th><th>Actions</th></tr>`;
                 let rowIdx = 0;
                 for (const [name, project] of Object.entries(projects)) {
                     let statusColor = '#6c757d';
@@ -1504,17 +1550,47 @@
                         statusContent = `<span class='spinner'></span> deploying`;
                     }
                     else if (project.status === 'error') statusColor = '#dc3545';
+                    
+                    // PM2 Status
+                    const pm2Status = pm2Statuses[name];
+                    let pm2StatusColor = '#6c757d';
+                    let pm2StatusText = 'unknown';
+                    if (pm2Status && pm2Status.isRunning) {
+                        pm2StatusColor = '#28a745';
+                        pm2StatusText = 'running';
+                    } else if (pm2Status && pm2Status.status === 'stopped') {
+                        pm2StatusColor = '#dc3545';
+                        pm2StatusText = 'stopped';
+                    } else if (pm2Status && pm2Status.status === 'errored') {
+                        pm2StatusColor = '#dc3545';
+                        pm2StatusText = 'error';
+                    }
+                    
                     html += `<tr class='${rowIdx % 2 === 0 ? 'even' : 'odd'}'>` +
                         `<td>${name}</td>` +
                         `<td>${project.type || '-'}</td>` +
                         `<td><span style='display:inline-block;width:12px;height:12px;border-radius:50%;background:${statusColor};margin-right:8px;'></span>${statusContent}</td>` +
+                        `<td><span style='display:inline-block;width:12px;height:12px;border-radius:50%;background:${pm2StatusColor};margin-right:8px;'></span>${pm2StatusText}</td>` +
                         `<td><label class='switch'><input type='checkbox' onchange='togglePolling("${name}", this.checked)' ${project.pollingEnabled !== false ? 'checked' : ''}><span class='slider'></span></label></td>` +
                         `<td>${project.lastDeployment || '-'}</td>` +
                         `<td>${project.lastCommit || '-'}</td>` +
-                        `<td style='min-width:320px;'><button class='btn' onclick='deployProjectFromDashboard("${name}")'>Deploy</button> <button class='btn' onclick='openLogModal("${name}")'>View Log</button> <button class='btn' onclick='viewPm2Logs("${name}")'>PM2 Logs</button> <button class='btn' onclick='viewDeployScript("${name}")'>View/Edit deploy.sh</button> <button class='btn' onclick='openFileManager("${name}")'>Files</button> <button class='btn btn-stop' onclick='confirmStopProject("${name}")'>Stop</button> <button class='btn btn-delete' onclick='confirmDeleteProject("${name}")'>Delete</button></td>` +
+                        `<td style='min-width:320px;'>`;
+                    
+                    // Show different buttons based on PM2 status
+                    if (pm2Status && pm2Status.isRunning) {
+                        html += `<button class='btn btn-stop' onclick='confirmStopProject("${name}")'>Stop</button> `;
+                    } else {
+                        html += `<button class='btn' onclick='startProject("${name}")'>Start</button> `;
+                    }
+                    
+                    html += `<button class='btn' onclick='openLogModal("${name}")'>View Log</button> ` +
+                        `<button class='btn' onclick='viewPm2Logs("${name}")'>PM2 Logs</button> ` +
+                        `<button class='btn' onclick='viewDeployScript("${name}")'>View/Edit deploy.sh</button> ` +
+                        `<button class='btn' onclick='openFileManager("${name}")'>Files</button> ` +
+                        `<button class='btn btn-delete' onclick='confirmDeleteProject("${name}")'>Delete</button></td>` +
                         `</tr>`;
                     if (project.deploymentHistory && project.deploymentHistory.length > 0) {
-                        html += `<tr><td colspan='7'><details><summary>Deployment History (last 3)</summary><ul style='margin:0;padding:0 0 0 20px;'>`;
+                        html += `<tr><td colspan='8'><details><summary>Deployment History (last 3)</summary><ul style='margin:0;padding:0 0 0 20px;'>`;
                         project.deploymentHistory.slice(0,3).forEach(h => {
                             html += `<li>${h.timestamp}: <b>${h.success ? 'Success' : 'Fail'}</b> - ${h.commit || ''} ${h.error ? ('<span style=\'color:#dc3545\'>' + h.error + '</span>') : ''}</li>`;
                         });
@@ -1538,13 +1614,33 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('Deployment started!');
+                    showStylishAlert('Deployment Started', 'Project deployment has been initiated!');
                 } else {
-                    alert('Deployment failed: ' + (data.error || 'Unknown error'));
+                    showStylishAlert('Deployment Failed', data.error || 'Unknown error');
                 }
                 loadDashboardProjects();
             } catch (e) {
-                alert('Error deploying project: ' + e.message);
+                showStylishAlert('Error', 'Error deploying project: ' + e.message);
+            }
+        }
+
+        async function startProject(name) {
+            if (!name) return;
+            if (!confirm(`Start project '${name}' now?`)) return;
+            try {
+                const res = await fetch(`/api/projects/${encodeURIComponent(name)}/start`, {
+                    method: 'POST',
+                    headers: { 'x-agent-password': agentPassword }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStylishAlert('Project Started', 'Project has been started successfully!');
+                } else {
+                    showStylishAlert('Start Failed', data.error || 'Unknown error');
+                }
+                loadDashboardProjects();
+            } catch (e) {
+                showStylishAlert('Error', 'Error starting project: ' + e.message);
             }
         }
 

@@ -229,6 +229,30 @@ class DeploymentAgent {
                 res.json({ success: false, error: e.message });
             }
         });
+
+        // --- Start Project (pm2) ---
+        this.app.post('/api/projects/:name/start', async (req, res) => {
+            const { name } = req.params;
+            const project = this.projects[name];
+            if (!project) return res.status(404).json({ error: 'Project not found' });
+            
+            try {
+                // Check if project is already running
+                const { stdout } = await execAsync(`pm2 jlist`);
+                const pm2Processes = JSON.parse(stdout);
+                const projectProcess = pm2Processes.find(p => p.name === name);
+                
+                if (projectProcess && projectProcess.pm2_env.status === 'online') {
+                    return res.json({ success: true, message: 'Project is already running' });
+                }
+                
+                // Start the project using PM2
+                await execAsync(`pm2 start ${name}`);
+                res.json({ success: true, message: 'Project started successfully' });
+            } catch (e) {
+                res.json({ success: false, error: e.message });
+            }
+        });
         // --- Toggle Polling (Auto-Update) ---
         this.app.post('/api/projects/:name/polling', async (req, res) => {
             const { name } = req.params;
@@ -264,6 +288,40 @@ class DeploymentAgent {
                 res.download(logFile);
             } catch (e) {
                 res.status(404).send('Log not found');
+            }
+        });
+
+        // --- PM2 Status Endpoint ---
+        this.app.get('/api/projects/:name/pm2-status', async (req, res) => {
+            const { name } = req.params;
+            try {
+                const { stdout } = await execAsync(`pm2 jlist`);
+                const pm2Processes = JSON.parse(stdout);
+                const projectProcess = pm2Processes.find(p => p.name === name);
+                
+                if (projectProcess) {
+                    res.json({ 
+                        success: true, 
+                        isRunning: projectProcess.pm2_env.status === 'online',
+                        status: projectProcess.pm2_env.status,
+                        uptime: projectProcess.pm2_env.pm_uptime,
+                        memory: projectProcess.monit.memory,
+                        cpu: projectProcess.monit.cpu
+                    });
+                } else {
+                    res.json({ 
+                        success: true, 
+                        isRunning: false,
+                        status: 'stopped'
+                    });
+                }
+            } catch (e) {
+                res.json({ 
+                    success: false, 
+                    isRunning: false,
+                    status: 'unknown',
+                    error: e.message 
+                });
             }
         });
 
@@ -802,11 +860,48 @@ class DeploymentAgent {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         try {
+            // Check if project directory and git repo already exist
+            const absolutePath = path.resolve(deployPath);
+            let projectExisted = false;
+            let gitExisted = false;
+            
+            try {
+                await fs.access(absolutePath);
+                projectExisted = true;
+                try {
+                    await fs.access(path.join(absolutePath, '.git'));
+                    gitExisted = true;
+                } catch {
+                    gitExisted = false;
+                }
+            } catch {
+                projectExisted = false;
+                gitExisted = false;
+            }
+            
             const migrator = require('../scripts/migrate.js');
             await migrator.migrateProject(deployPath, name, repo, branch || 'main', type || 'nodejs');
+            
             // Reload projects.json into memory after migration
             await this.loadConfiguration();
-            res.json({ success: true, projects: this.projects });
+            
+            // Determine migration type for user feedback
+            let migrationType = 'cloned';
+            if (projectExisted && gitExisted) {
+                migrationType = 'migrated';
+            } else if (projectExisted && !gitExisted) {
+                migrationType = 'migrated_with_git';
+            } else {
+                migrationType = 'cloned';
+            }
+            
+            res.json({ 
+                success: true, 
+                projects: this.projects,
+                migrationType: migrationType,
+                projectExisted: projectExisted,
+                gitExisted: gitExisted
+            });
         } catch (e) {
             // Log migration error to project log and combined log
             const timestamp = new Date().toISOString();
